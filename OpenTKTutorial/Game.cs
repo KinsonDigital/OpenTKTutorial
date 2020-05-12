@@ -15,11 +15,66 @@ namespace OpenTKTutorial
     {
         private int _vertexBufferObject;
         private int _vertexArrayObject;
-        private float[] _vertices = {
-            -0.5f, -0.5f, 0.0f, //Bottom-left vertex
-            0.5f, -0.5f, 0.0f, //Bottom-right vertex
-            0.0f,  0.5f, 0.0f  //Top vertex
+        private int _elementBufferObject;
+
+        float[] _vertices = {
+            0.5f,  0.5f, 0.0f,  // top right
+            0.5f, -0.5f, 0.0f,  // bottom right
+            -0.5f, -0.5f, 0.0f,  // bottom left
+            -0.5f,  0.5f, 0.0f   // top left
         };
+        uint[] _indices = {  // note that we start from 0!
+            0, 1, 3,   // first triangle
+            1, 2, 3    // second triangle
+        };
+
+        /*
+            First Triangle(Indices 0, 1, 3:
+
+   TopLeft(Indice 3)*---------------*TopRight(Indice 0)
+                     \              |
+                      \             |
+                       \            |
+                        \           |
+                         \          |
+                          \         |
+                           \        |
+                            \       |
+                             \      |
+                              \     |
+                               \    |
+                                \   |
+                                 \  |
+                                  \ |
+                                   \|
+                                    *BottomRight(Indice 1)
+            
+            Second Triangle(Indices 1, 2, 3):
+
+                            *TopLeft(Indice 3)
+                            |\
+                            | \
+                            |  \
+                            |   \
+                            |    \
+                            |     \
+                            |      \
+                            |       \
+                            |        \
+                            |         \
+                            |          \
+                            |           \
+                            |            \
+                            |             \
+                            |              \
+                            |               \
+                            |                \
+                            |                 \
+                            |                  \
+                            |___________________\
+        BottomLeft(Indice 2)*                    *BottomRight(Indice 1)
+         */
+
         private Shader _shader;
 
 
@@ -56,6 +111,7 @@ namespace OpenTKTutorial
             */
             GL.BufferData(BufferTarget.ArrayBuffer, _vertices.Length * sizeof(float), _vertices, BufferUsageHint.StaticDraw);
 
+            //Create the VertexArrayObject(VAO)
             _vertexArrayObject = GL.GenVertexArray();//Create a vertext array object handle
 
             // Initialization code (done once unless your object frequently changes)
@@ -68,6 +124,12 @@ namespace OpenTKTutorial
             // 3. then set our vertex attributes pointers
             GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 3 * sizeof(float), 0);
             GL.EnableVertexAttribArray(0);
+
+
+            //Create the ElementBufferObject(EBO)
+            _elementBufferObject = GL.GenBuffer();
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, _elementBufferObject);
+            GL.BufferData(BufferTarget.ElementArrayBuffer, _indices.Length * sizeof(uint), _indices, BufferUsageHint.StaticDraw);
 
 
             _shader = new Shader("shader.vert", "shader.frag");
@@ -94,7 +156,9 @@ namespace OpenTKTutorial
 
             _shader.Use();
             GL.BindVertexArray(_vertexArrayObject);
-            GL.DrawArrays(PrimitiveType.Triangles, 0, 3);//This triangle is the vertices
+
+            //Draw the triangles described in _vertices and _indices
+            GL.DrawElements(PrimitiveType.Triangles, _indices.Length, DrawElementsType.UnsignedInt, 0);
 
             SwapBuffers();
 
