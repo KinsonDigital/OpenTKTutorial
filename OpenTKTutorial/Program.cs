@@ -1,4 +1,6 @@
-﻿using System;
+﻿using OpenToolkit.Mathematics;
+using OpenToolkit.Windowing.Desktop;
+using System;
 
 namespace OpenTKTutorial
 {
@@ -6,7 +8,14 @@ namespace OpenTKTutorial
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            var gameWinSettings = new GameWindowSettings();
+            var nativeWinSettings = new NativeWindowSettings();
+            nativeWinSettings.Size = new Vector2i(800, 600);
+
+
+            var game = new Game(gameWinSettings, nativeWinSettings);
+
+            game.Run();
         }
     }
 }
