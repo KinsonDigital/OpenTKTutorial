@@ -7,10 +7,15 @@ namespace OpenTKTutorial
 {
     public class Renderer : IDisposable
     {
+        #region Private Fields
         private readonly ShaderProgram _shaderProgram;
         private readonly int _renderSurfaceWidth;
         private readonly int _renderSurfaceHeight;
+        private bool disposedValue = false;
+        #endregion
 
+
+        #region Constructors
         public Renderer(int renderSurfaceWidth, int renderSurfaceHeight)
         {
             _shaderProgram = new ShaderProgram("shader.vert", "shader.frag");
@@ -21,10 +26,13 @@ namespace OpenTKTutorial
             _renderSurfaceHeight = renderSurfaceHeight;
 
             GL.Enable(EnableCap.Blend);
+            GL.Disable(EnableCap.DepthTest);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
         }
+        #endregion
 
 
+        #region Public Methods
         public void Render(Texture texture)
         {
             var transMatrix = BuildTransMatrix(texture.X,
@@ -34,11 +42,11 @@ namespace OpenTKTutorial
                                                1,
                                                0);
 
-            _shaderProgram.SetTintColor(Color.FromArgb(0, 0, 0, 0));
+            //_shaderProgram.SetTintColor(Color.FromArgb(0, 255, 255, 255));
             _shaderProgram.SetTransformationMatrix(transMatrix);
 
             texture.Bind();
-            _shaderProgram.UseProgram();
+            //_shaderProgram.UseProgram();
             texture.VA.Bind();//Bind and unbind this inside of the texture.Bind()?
 
             GL.DrawElements(PrimitiveType.Triangles, texture.TotalIndices, DrawElementsType.UnsignedInt, 0);
@@ -46,6 +54,19 @@ namespace OpenTKTutorial
             texture.Unbind();
         }
 
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+
+        ~Renderer() => Dispose(false);
+        #endregion
+
+
+        #region Private Methods
         private void SetupShader()
         {
             _shaderProgram.UseProgram();
@@ -59,7 +80,6 @@ namespace OpenTKTutorial
             // We add an offset of 3, since the first vertex coordinate comes after the first vertex
             // and change the amount of data to 2 because there's only 2 floats for vertex coordinates
             SetupVertexShaderAttribute(_shaderProgram, "aTexCoord", 2, 3 * sizeof(float));
-
         }
 
 
@@ -83,8 +103,8 @@ namespace OpenTKTutorial
             var scaleX = (float)width / _renderSurfaceWidth;
             var scaleY = (float)height / _renderSurfaceHeight;
 
-            scaleX *= 1f;
-            scaleY *= 1f;
+            scaleX *= size;
+            scaleY *= size;
 
             var ndcX = x.MapValue(0f, _renderSurfaceWidth, -1f, 1f);
             var ndcY = y.MapValue(0f, _renderSurfaceHeight, 1f, -1f);
@@ -92,19 +112,9 @@ namespace OpenTKTutorial
             var scaleMatrix = Matrix4.CreateScale(scaleX, scaleY, 1f);
             var positionMatrix = Matrix4.CreateTranslation(new Vector3(ndcX, ndcY, 0));
 
+
             return scaleMatrix * positionMatrix;
         }
-
-        #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        ~Renderer() => Dispose(false);
         #endregion
 
 
