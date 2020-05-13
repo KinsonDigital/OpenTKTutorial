@@ -7,9 +7,16 @@
 
   <ItemGroup>
     <PackageReference Include="OpenTK" Version="4.0.0-pre9.1" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-rc0001" />
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Content\Graphics\Dungeon.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Content\Graphics\Link.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="shader.frag">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

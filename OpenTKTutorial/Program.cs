@@ -1,6 +1,5 @@
 ﻿using OpenToolkit.Mathematics;
 using OpenToolkit.Windowing.Desktop;
-using System;
 
 namespace OpenTKTutorial
 {

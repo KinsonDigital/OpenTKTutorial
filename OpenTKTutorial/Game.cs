@@ -1,32 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using OpenToolkit;
-using OpenToolkit.Mathematics;
-using OpenToolkit.Windowing.Common;
+﻿using OpenToolkit.Windowing.Common;
 using OpenToolkit.Windowing.Desktop;
-using OpenToolkit.Input;
 using OpenToolkit.Windowing.Common.Input;
 using OpenToolkit.Graphics.OpenGL4;
+using System.IO;
+using System.Reflection;
+using System;
+using System.Runtime.InteropServices;
 
 namespace OpenTKTutorial
 {
     public class Game : GameWindow
     {
+        private readonly string _appPathDir = $@"{Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)}\";
+        private readonly string _contentDir;
+        private readonly string _graphicsContent;
+        private Renderer _renderer;
         private int _vertexBufferObject;
-        private int _vertexArrayObject;
+        
         private int _elementBufferObject;
 
-        float[] _vertices = {
-            0.5f,  0.5f, 0.0f,  // top right
-            0.5f, -0.5f, 0.0f,  // bottom right
-            -0.5f, -0.5f, 0.0f,  // bottom left
-            -0.5f,  0.5f, 0.0f   // top left
-        };
-        uint[] _indices = {  // note that we start from 0!
-            0, 1, 3,   // first triangle
-            1, 2, 3    // second triangle
-        };
 
         /*
             First Triangle(Indices 0, 1, 3:
@@ -76,12 +68,25 @@ namespace OpenTKTutorial
          */
 
         private Shader _shader;
-
+        private Texture _linkTexture;
+        private readonly Texture _backgroundTexture;
 
         public Game(GameWindowSettings gameWindowSettings, NativeWindowSettings nativeWindowSettings)
             : base(gameWindowSettings, nativeWindowSettings)
         {
+            _contentDir = $@"{_appPathDir}Content\";
+            _graphicsContent = $@"{_contentDir}Graphics\";
+            _linkTexture = new Texture($"{_graphicsContent}Link.png")
+            {
+                X = 410,
+                Y = 310
+            };
 
+            _backgroundTexture = new Texture($"{_graphicsContent}Dungeon.png")
+            {
+                X = Size.X / 2,
+                Y = Size.Y / 2
+            };
         }
 
 
@@ -90,49 +95,7 @@ namespace OpenTKTutorial
         {
             GL.ClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
-            _vertexBufferObject = GL.GenBuffer();//Create a buffer object handle
-
-            //Bind an array buffer to the buffer object
-            GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBufferObject);
-
-            //Send the array buffer data to the GPU's memory
-            /*
-            The fourth parameter is a BufferUsageHint, which specifies how we want the graphics
-            card to manage the given data.This can take 3 forms:
-
-            StaticDraw: the data will most likely not change at all or very rarely.
-            DynamicDraw: the data is likely to change a lot.
-            StreamDraw: the data will change every time it is drawn.
-
-            The position data of the triangle does not change and stays the same for every render 
-            call so its usage type should best be StaticDraw.If, for instance, one would have a buffer 
-            with data that is likely to change frequently, a usage type of DynamicDraw or StreamDraw 
-            ensures the graphics card will place the data in memory that allows for faster writes.
-            */
-            GL.BufferData(BufferTarget.ArrayBuffer, _vertices.Length * sizeof(float), _vertices, BufferUsageHint.StaticDraw);
-
-            //Create the VertexArrayObject(VAO)
-            _vertexArrayObject = GL.GenVertexArray();//Create a vertext array object handle
-
-            // Initialization code (done once unless your object frequently changes)
-            //A VAO(Vertext Array Object) is basically a saved setup/configuration of a VBO
-            // 1. bind Vertex Array Object
-            GL.BindVertexArray(_vertexArrayObject);
-            // 2. copy our vertices array in a buffer for OpenGL to use
-            GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBufferObject);
-            GL.BufferData(BufferTarget.ArrayBuffer, _vertices.Length * sizeof(float), _vertices, BufferUsageHint.StaticDraw);
-            // 3. then set our vertex attributes pointers
-            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 3 * sizeof(float), 0);
-            GL.EnableVertexAttribArray(0);
-
-
-            //Create the ElementBufferObject(EBO)
-            _elementBufferObject = GL.GenBuffer();
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, _elementBufferObject);
-            GL.BufferData(BufferTarget.ElementArrayBuffer, _indices.Length * sizeof(uint), _indices, BufferUsageHint.StaticDraw);
-
-
-            _shader = new Shader("shader.vert", "shader.frag");
+            _renderer = new Renderer(Size.X, Size.Y);
 
             base.OnLoad();
         }
@@ -148,17 +111,14 @@ namespace OpenTKTutorial
 
             base.OnUpdateFrame(args);
         }
-
+         
 
         protected override void OnRenderFrame(FrameEventArgs args)
         {
-            GL.Clear(ClearBufferMask.ColorBufferBit);//Clear the screen to the color that was set in the OnLoad method
+            GL.Clear(ClearBufferMask.ColorBufferBit);
 
-            _shader.Use();
-            GL.BindVertexArray(_vertexArrayObject);
-
-            //Draw the triangles described in _vertices and _indices
-            GL.DrawElements(PrimitiveType.Triangles, _indices.Length, DrawElementsType.UnsignedInt, 0);
+            _renderer.Render(_backgroundTexture);
+            _renderer.Render(_linkTexture);
 
             SwapBuffers();
 

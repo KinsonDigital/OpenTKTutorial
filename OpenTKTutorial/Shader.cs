@@ -1,9 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Reflection.Metadata;
 using System.Text;
 using OpenToolkit.Graphics.OpenGL4;
+using OpenToolkit.Mathematics;
 
 namespace OpenTKTutorial
 {
@@ -76,7 +75,25 @@ namespace OpenTKTutorial
         }
 
 
-        public void Use()
+        public void SetTransformationMatrix(Matrix4 matrix)
+        {
+            var uniformTransformationLocation = GetUniformLocation();
+            GL.UniformMatrix4(uniformTransformationLocation, true, ref matrix);
+        }
+
+        public int GetAttribLocation(string attribName)
+        {
+            return GL.GetAttribLocation(_shaderProgramHandle, attribName);
+        }
+
+
+        public int GetUniformLocation()
+        {
+            return GL.GetUniformLocation(_shaderProgramHandle, "u_transform");
+        }
+
+
+        public void UseProgram()
         {
             GL.UseProgram(_shaderProgramHandle);
         }
