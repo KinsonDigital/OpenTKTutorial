@@ -7,26 +7,53 @@ using SixLabors.ImageSharp.Processing;
 
 namespace OpenTKTutorial
 {
-    public class Texture
+    public class Texture : IDisposable
     {
         private int _textureId;
         float[] _vertices = {
-            //Position              Texture coordinates
-            //X     Y     Z  
-           // 0.5f,  0.5f, 0.0f,     1.0f, 1.0f, // top right
-           // 0.5f, -0.5f, 0.0f,     1.0f, 0.0f, // bottom right
-           //-0.5f, -0.5f, 0.0f,     0.0f, 0.0f, // bottom left
-           //-0.5f,  0.5f, 0.0f,     0.0f, 1.0f  // top left
-           -1f,  1f, 0.0f,     0.0f, 1.0f, // top left
-            1f,  1f, 0.0f,     1.0f, 1.0f, // top right
-            1f, -1f, 0.0f,     1.0f, 0.0f, // bottom right
-           -1f, -1f, 0.0f,     0.0f, 0.0f  // bottom left
+            //      Positions      Texture Coordinates
+            //X       Y       Z         X     Y
+            -1f,     1f,     0.0f,     0.0f, 1.0f, // top left
+             1f,     1f,     0.0f,     1.0f, 1.0f, // top right
+             1f,    -1f,     0.0f,     1.0f, 0.0f, // bottom right
+            -1f,    -1f,     0.0f,     0.0f, 0.0f  // bottom left
         };
         uint[] _indices = {  // note that we start from 0!
             0, 1, 3,   // first triangle
             1, 2, 3    // second triangle
         };
+
+        /*
+            First Triangle(Indices 0, 1, 3:
+
+    TopLeft(Indice 0)|---------/TopRight(Indice 1)
+                     |        /
+                     |       /
+                     |      /
+                     |     /
+                     |    /
+                     |   /
+                     |  /
+                     | /
+                     |/
+                     *BottomLeft(Indice 3)
+                                    
+
+            Second Triangle(Indices 1, 2, 3):
+
+                                 /|TopRight(Indice 1)
+                                / |
+                               /  |
+                              /   |
+                             /    |
+                            /     |
+                           /      |
+                          /       |
+                         /        |
+    BottomLeft(Indice 3)/_________|BottomRight(Indice 2)
+         */
         private bool _isBound;
+        private bool _disposedValue;
         private readonly VertexBuffer _vertexBuffer;
         private readonly IndexBuffer _indexBuffer;
 
@@ -140,6 +167,21 @@ namespace OpenTKTutorial
 
             //Generate the texture
             GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, image.Width, image.Height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, pixels.ToArray());
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposedValue)
+                return;
+
+            Unbind();
+            GL.DeleteTexture(_textureId);
         }
     }
 }

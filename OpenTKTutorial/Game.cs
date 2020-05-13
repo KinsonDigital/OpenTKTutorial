@@ -4,8 +4,6 @@ using OpenToolkit.Windowing.Common.Input;
 using OpenToolkit.Graphics.OpenGL4;
 using System.IO;
 using System.Reflection;
-using System;
-using System.Runtime.InteropServices;
 
 namespace OpenTKTutorial
 {
@@ -15,59 +13,6 @@ namespace OpenTKTutorial
         private readonly string _contentDir;
         private readonly string _graphicsContent;
         private Renderer _renderer;
-        private int _vertexBufferObject;
-        
-        private int _elementBufferObject;
-
-
-        /*
-            First Triangle(Indices 0, 1, 3:
-
-   TopLeft(Indice 3)*---------------*TopRight(Indice 0)
-                     \              |
-                      \             |
-                       \            |
-                        \           |
-                         \          |
-                          \         |
-                           \        |
-                            \       |
-                             \      |
-                              \     |
-                               \    |
-                                \   |
-                                 \  |
-                                  \ |
-                                   \|
-                                    *BottomRight(Indice 1)
-            
-            Second Triangle(Indices 1, 2, 3):
-
-                            *TopLeft(Indice 3)
-                            |\
-                            | \
-                            |  \
-                            |   \
-                            |    \
-                            |     \
-                            |      \
-                            |       \
-                            |        \
-                            |         \
-                            |          \
-                            |           \
-                            |            \
-                            |             \
-                            |              \
-                            |               \
-                            |                \
-                            |                 \
-                            |                  \
-                            |___________________\
-        BottomLeft(Indice 2)*                    *BottomRight(Indice 1)
-         */
-
-        private Shader _shader;
         private Texture _linkTexture;
         private readonly Texture _backgroundTexture;
 
@@ -136,13 +81,9 @@ namespace OpenTKTutorial
 
         protected override void OnUnload()
         {
-            //Unbinds the buffer to prevent any accidental calls to this buffer which would end in a crash
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
-
-            //Delete the buffer data
-            GL.DeleteBuffer(_vertexBufferObject);
-
-            _shader.Dispose();
+            _linkTexture.Dispose();
+            _backgroundTexture.Dispose();
+            _renderer.Dispose();
             base.OnUnload();
         }
     }

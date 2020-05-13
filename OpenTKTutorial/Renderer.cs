@@ -1,10 +1,11 @@
 ﻿using OpenToolkit.Graphics.OpenGL4;
 using OpenToolkit.Mathematics;
+using System;
 using System.Drawing;
 
 namespace OpenTKTutorial
 {
-    public class Renderer
+    public class Renderer : IDisposable
     {
         private readonly ShaderProgram _shaderProgram;
         private readonly int _renderSurfaceWidth;
@@ -93,5 +94,32 @@ namespace OpenTKTutorial
 
             return scaleMatrix * positionMatrix;
         }
+
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        ~Renderer() => Dispose(false);
+        #endregion
+
+
+        #region Protected Methods
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                    _shaderProgram.Dispose();
+
+
+                disposedValue = true;
+            }
+        }
+        #endregion
     }
 }

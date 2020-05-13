@@ -97,8 +97,6 @@ namespace OpenTKTutorial
 
             vec4Clr = vec4Clr.MapValues(0, 255, 0, 1);
 
-            vec4Clr.W = 0.5f;//TODO: This might not be the best way to tint a color. Research this
-
             //Update the tint color on the GPU
             var tintClrLocation = _uniformLocations["u_tintClr"];
 
