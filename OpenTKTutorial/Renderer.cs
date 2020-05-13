@@ -1,6 +1,7 @@
-﻿using OpenToolkit.Graphics.OpenGL4;
+using OpenToolkit.Graphics.OpenGL4;
 using OpenToolkit.Mathematics;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 
 namespace OpenTKTutorial
@@ -42,11 +43,11 @@ namespace OpenTKTutorial
                                                1,
                                                0);
 
-            //_shaderProgram.SetTintColor(Color.FromArgb(0, 255, 255, 255));
+            _shaderProgram.UseProgram();
+            _shaderProgram.SetTintColor(Color.FromArgb(0, 255, 255, 255));
             _shaderProgram.SetTransformationMatrix(transMatrix);
-
+             
             texture.Bind();
-            //_shaderProgram.UseProgram();
             texture.VA.Bind();//Bind and unbind this inside of the texture.Bind()?
 
             GL.DrawElements(PrimitiveType.Triangles, texture.TotalIndices, DrawElementsType.UnsignedInt, 0);
