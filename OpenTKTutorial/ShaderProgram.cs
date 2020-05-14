@@ -97,10 +97,13 @@ namespace OpenTKTutorial
 
             vec4Clr = vec4Clr.MapValues(0, 255, 0, 1);
 
-            var tintClrLocation = _uniformLocations["u_tintClr"];
+            if (_uniformLocations.Count > 0)
+            {
+                var tintClrLocation = _uniformLocations["u_tintClr"];
 
-            //Update the tint color on the GPU
-            GL.Uniform4(tintClrLocation, vec4Clr);
+                //Update the tint color on the GPU
+                GL.Uniform4(tintClrLocation, vec4Clr);
+            }
         }
 
 
@@ -110,6 +113,9 @@ namespace OpenTKTutorial
         /// <param name="matrix">The transformation maxtrix to apply.</param>
         public void SetTransformationMatrix(Matrix4 matrix)
         {
+            if (_uniformLocations.Count <= 0)
+                return;
+
             var uniformTransformationLocation = _uniformLocations["u_transform"];
             GL.UniformMatrix4(uniformTransformationLocation, true, ref matrix);
         }
@@ -118,10 +124,7 @@ namespace OpenTKTutorial
         /// <summary>
         /// Sets the active shader program to use on the GPU.
         /// </summary>
-        public void UseProgram()
-        {
-            GL.UseProgram(ProgramId);
-        }
+        public void UseProgram() => GL.UseProgram(ProgramId);
 
 
         /// <summary>
@@ -235,7 +238,6 @@ namespace OpenTKTutorial
         private void DestroyShader(int shaderProgramId, int shaderId)
         {
             GL.DetachShader(shaderProgramId, shaderId);
-
             GL.DeleteShader(shaderId);
         }
 

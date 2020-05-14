@@ -28,7 +28,7 @@ namespace OpenTKTutorial
             Count = data.Length;
             _bufferId = GL.GenBuffer();
             Bind();
-            GL.BufferData(BufferTarget.ElementArrayBuffer, data.Length * sizeof(uint), data, BufferUsageHint.StaticDraw);
+            GL.BufferData(BufferTarget.ElementArrayBuffer, data.Length * sizeof(uint), data, BufferUsageHint.DynamicDraw);
         }
         #endregion
 

@@ -1,15 +1,12 @@
 using OpenToolkit.Graphics.OpenGL4;
 using OpenToolkit.Mathematics;
 using System;
-using System.Collections.Generic;
-using System.Drawing;
 
 namespace OpenTKTutorial
 {
     public class Renderer : IDisposable
     {
         #region Private Fields
-        private readonly ShaderProgram _shaderProgram;
         private readonly int _renderSurfaceWidth;
         private readonly int _renderSurfaceHeight;
         private bool disposedValue = false;
@@ -19,17 +16,19 @@ namespace OpenTKTutorial
         #region Constructors
         public Renderer(int renderSurfaceWidth, int renderSurfaceHeight)
         {
-            _shaderProgram = new ShaderProgram("shader.vert", "shader.frag");
-
-            SetupShader();
+            Shader = new ShaderProgram("shader.vert", "shader.frag");
 
             _renderSurfaceWidth = renderSurfaceWidth;
             _renderSurfaceHeight = renderSurfaceHeight;
 
             GL.Enable(EnableCap.Blend);
-            GL.Disable(EnableCap.DepthTest);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
         }
+        #endregion
+
+
+        #region Props
+        public ShaderProgram Shader { get; private set; }
         #endregion
 
 
@@ -40,15 +39,15 @@ namespace OpenTKTutorial
                                                texture.Y,
                                                texture.Width,
                                                texture.Height,
-                                               1,
-                                               0);
+                                               texture.Size,
+                                               texture.Angle);
 
-            _shaderProgram.UseProgram();
-            _shaderProgram.SetTintColor(Color.FromArgb(0, 255, 255, 255));
-            _shaderProgram.SetTransformationMatrix(transMatrix);
+            Shader.UseProgram();
+            Shader.SetTintColor(texture.TintColor);
+            Shader.SetTransformationMatrix(transMatrix);
              
             texture.Bind();
-            texture.VA.Bind();//Bind and unbind this inside of the texture.Bind()?
+            texture.VA.Bind();
 
             GL.DrawElements(PrimitiveType.Triangles, texture.TotalIndices, DrawElementsType.UnsignedInt, 0);
 
@@ -68,37 +67,16 @@ namespace OpenTKTutorial
 
 
         #region Private Methods
-        private void SetupShader()
-        {
-            _shaderProgram.UseProgram();
-
-            // Because there is 5 floats between the start of the first vertex and the start of the second,
-            // we set this to 5 * sizeof(float).
-            // This will now pass the new vertex array to the buffer.
-            SetupVertexShaderAttribute(_shaderProgram, "aPosition", 3, 0);
-
-            // Next, we also setup texture coordinates. It works in much the same way.
-            // We add an offset of 3, since the first vertex coordinate comes after the first vertex
-            // and change the amount of data to 2 because there's only 2 floats for vertex coordinates
-            SetupVertexShaderAttribute(_shaderProgram, "aTexCoord", 2, 3 * sizeof(float));
-        }
-
-
         /// <summary>
-        /// Sets up the vertex shader attribute.
+        /// Builds a complete transformation matrix using the given params.
         /// </summary>
-        /// <param name="shaderProgram">The shader program that contains the vertex shader to setup.</param>
-        /// <param name="attrName">The name of the vertex shader attribute to setup.</param>
-        /// <param name="size">The size/stride of the vertex bufferdata.</param>
-        /// <param name="offSet">The offset of the vertex buffer data.</param>
-        private void SetupVertexShaderAttribute(ShaderProgram shaderProgram, string attrName, int size, int offSet)
-        {
-            var vertexLocation = GL.GetAttribLocation(shaderProgram.ProgramId, attrName);
-            GL.EnableVertexAttribArray(vertexLocation);
-            GL.VertexAttribPointer(vertexLocation, size, VertexAttribPointerType.Float, false, 5 * sizeof(float), offSet);
-        }
-
-
+        /// <param name="x">The x position of a texture.</param>
+        /// <param name="y">The y position of a texture.</param>
+        /// <param name="width">The width of a texture.</param>
+        /// <param name="height">The height of a texture.</param>
+        /// <param name="size">The size of a texture. 1 represents normal size and 1.5 represents 150%.</param>
+        /// <param name="angle">The angle of the texture.</param>
+        /// <returns></returns>
         private Matrix4 BuildTransMatrix(float x, float y, int width, int height, float size, float angle)
         {
             var scaleX = (float)width / _renderSurfaceWidth;
@@ -110,11 +88,18 @@ namespace OpenTKTutorial
             var ndcX = x.MapValue(0f, _renderSurfaceWidth, -1f, 1f);
             var ndcY = y.MapValue(0f, _renderSurfaceHeight, 1f, -1f);
 
+            //NOTE: (+ degrees) rotates CCW and (- degress) rotates CW
+            var angleRadians = MathHelper.DegreesToRadians(angle);
+
+            //Invert angle to rotate CW instead of CCW
+            angleRadians *= -1;
+
+            var rotation = Matrix4.CreateRotationZ(angleRadians);
             var scaleMatrix = Matrix4.CreateScale(scaleX, scaleY, 1f);
             var positionMatrix = Matrix4.CreateTranslation(new Vector3(ndcX, ndcY, 0));
 
 
-            return scaleMatrix * positionMatrix;
+            return rotation * scaleMatrix * positionMatrix;
         }
         #endregion
 
@@ -125,7 +110,7 @@ namespace OpenTKTutorial
             if (!disposedValue)
             {
                 if (disposing)
-                    _shaderProgram.Dispose();
+                    Shader.Dispose();
 
 
                 disposedValue = true;

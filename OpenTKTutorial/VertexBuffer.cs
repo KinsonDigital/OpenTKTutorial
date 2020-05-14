@@ -118,7 +118,6 @@ namespace OpenTKTutorial
         private void SetLayout(float[] data)
         {
             GL.BindBuffer(BufferTarget.ArrayBuffer, _bufferId);
-
             GL.BufferData(BufferTarget.ArrayBuffer, data.Length * sizeof(float), data, BufferUsageHint.StaticDraw);
         }
         #endregion

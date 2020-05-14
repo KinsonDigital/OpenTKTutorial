@@ -17,12 +17,5 @@ void main ()
 {
     vec4 fragClr = texture(u_texture0, texCoord);
 
-	//If the frag color alpha channel is 100% transparent, ignore
-	if (fragClr.a > 0)
-	{
-		outputColor.r = u_tintClr.a * u_tintClr.r + (1.0 - u_tintClr.a) * fragClr.r;
-		outputColor.g = u_tintClr.a * u_tintClr.g + (1.0 - u_tintClr.a) * fragClr.g;
-		outputColor.b = u_tintClr.a * u_tintClr.b + (1.0 - u_tintClr.a) * fragClr.b;
-		outputColor.a = u_tintClr.a * u_tintClr.a + (1.0 - u_tintClr.a) * fragClr.a;
-	}
+	outputColor = texture(u_texture0, texCoord) * u_tintClr;
 }

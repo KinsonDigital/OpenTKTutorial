@@ -6,7 +6,7 @@ namespace OpenTKTutorial
     public class VertexArray : IDisposable
     {
         #region Private Fields
-        private bool _isBound = false;//BindTexture is expensive.  This prevents the call if it is already bound
+        private bool _isBound = false;
         private bool _disposedValue = false;
         #endregion
 
