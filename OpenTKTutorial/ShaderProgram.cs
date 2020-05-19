@@ -88,40 +88,6 @@ namespace OpenTKTutorial
 
         #region Public Methods
         /// <summary>
-        /// Sets the tint color applied to the fragment shader using the given <paramref name="color"/>.
-        /// </summary>
-        /// <param name="color">The tint color to apply.</param>
-        public void SetTintColor(Color color)
-        {
-            var vec4Clr = color.ToVector4();
-
-            vec4Clr = vec4Clr.MapValues(0, 255, 0, 1);
-
-            if (_uniformLocations.Count > 0)
-            {
-                var tintClrLocation = _uniformLocations["u_tintClr"];
-
-                //Update the tint color on the GPU
-                GL.Uniform4(tintClrLocation, vec4Clr);
-            }
-        }
-
-
-        /// <summary>
-        /// Sets the transformation matrix in the vertex shader using the given <paramref name="matrix"/>.
-        /// </summary>
-        /// <param name="matrix">The transformation maxtrix to apply.</param>
-        public void SetTransformationMatrix(Matrix4 matrix)
-        {
-            if (_uniformLocations.Count <= 0)
-                return;
-
-            var uniformTransformationLocation = _uniformLocations["u_transform"];
-            GL.UniformMatrix4(uniformTransformationLocation, true, ref matrix);
-        }
-
-
-        /// <summary>
         /// Sets the active shader program to use on the GPU.
         /// </summary>
         public void UseProgram() => GL.UseProgram(ProgramId);
@@ -135,12 +101,6 @@ namespace OpenTKTutorial
             Dispose(true);
             GC.SuppressFinalize(this);
         }
-
-
-        /// <summary>
-        /// Cleans up unmanaged resources.
-        /// </summary>
-        ~ShaderProgram() => Dispose(false);
         #endregion
 
 

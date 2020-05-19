@@ -1,25 +1,29 @@
-﻿#version 330 core
+#version 450 core
 
+//These are vars that take in data from the vertex data buffer
 layout(location = 0) in vec3 aPosition;
-
-// We add another input variable for the texture coordinates
-
 layout(location = 1) in vec2 aTexCoord;
+layout(location = 2) in vec4 aTintColor;
+layout(location = 5) in float aTexIndex;
 
-// ...However, they aren't needed for the vertex shader itself.
-// Instead, we create an output variable so we can send that data to the fragment shader.
 
-out vec2 texCoord;
+//Uniforms are vars that can dynamically take in data
+//from the CPU side at will
+uniform mat4 u_Transform;
 
-//This is for the transformation matrix
-uniform mat4 u_transform;
 
-void main(void)
+//These are vars that send data out and can be
+//used as input into the fragment shader
+out vec2 v_TexCoord;
+out vec4 v_TintClr;
+out float v_TexIndex;
+
+
+void main()
 {
-    // Then, we further the input texture coordinate to the output one.
-    // texCoord can now be used in the fragment shader.
-    texCoord = aTexCoord;
+    v_TintClr = aTintColor;
+    v_TexCoord = aTexCoord;
+    v_TexIndex = aTexIndex;
 
-	// Then all you have to do is multiply the vertices by the transformation matrix, and you'll see your transformation in the scene!
-    gl_Position = vec4(aPosition, 1.0) * u_transform;
+    gl_Position = vec4(aPosition, 1.0) * u_Transform;
 }
