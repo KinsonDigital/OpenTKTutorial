@@ -105,7 +105,6 @@ namespace OpenTKTutorial
             GL.Clear(ClearBufferMask.ColorBufferBit);
 
 
-            //_renderer.Render(new[] { _backgroundTexture, _linkTexture } );
             _renderer.Render(_backgroundTexture);
             _renderer.Render(_linkTexture);
 
@@ -123,6 +122,7 @@ namespace OpenTKTutorial
 
             base.OnResize(e);
         }
+
 
         protected override void OnClosing(CancelEventArgs e)
         {

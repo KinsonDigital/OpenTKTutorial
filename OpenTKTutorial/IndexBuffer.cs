@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using OpenToolkit.Graphics.OpenGL4;
 
 namespace OpenTKTutorial
@@ -11,8 +12,8 @@ namespace OpenTKTutorial
         #region Private Fields
         //TODO:  Need to create a static list of bound buffers. This will allow  the ability
         //to keep track if the buffer for a particular instance is bound
+        private readonly static List<int> _boundIDNumbers = new List<int>();
         private int _id;
-        private bool _isBound = false;//BindTexture is expensive.  This prevents the call if it is already bound
         private bool _disposedValue = false;
         #endregion
 
@@ -30,7 +31,7 @@ namespace OpenTKTutorial
             Count = data.Length;
             _id = GL.GenBuffer();
 
-            SetLayout(data);
+            UploadDataToGPU(data);
         }
         #endregion
 
@@ -54,12 +55,12 @@ namespace OpenTKTutorial
         /// </summary>
         public void Bind()
         {
-            if (_isBound)
+            //NOTE: Only one index buffer can be bound at a time
+            if (_boundIDNumbers.Contains(_id))
                 return;
 
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, _id);
-            
-            _isBound = true;
+            _boundIDNumbers.Add(_id);
         }
 
 
@@ -68,12 +69,12 @@ namespace OpenTKTutorial
         /// </summary>
         public void Unbind()
         {
-            if (!_isBound)
+            //If the buffer is already unbound
+            if (!_boundIDNumbers.Contains(_id))
                 return;
 
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
-
-            _isBound = false;
+            _boundIDNumbers.Remove(_id);
         }
 
 
@@ -89,7 +90,11 @@ namespace OpenTKTutorial
 
 
         #region Private Methods
-        private void SetLayout(uint[] data)
+        /// <summary>
+        /// Uploads the given <paramref name="data"/> to the GPU.
+        /// </summary>
+        /// <param name="data">The data to upload.</param>
+        private void UploadDataToGPU(uint[] data)
         {
             Bind();
             GL.BufferData(BufferTarget.ElementArrayBuffer, data.Length * sizeof(uint), data, BufferUsageHint.DynamicDraw);

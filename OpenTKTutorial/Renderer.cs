@@ -11,7 +11,7 @@ namespace OpenTKTutorial
         private readonly int _renderSurfaceWidth;
         private readonly int _renderSurfaceHeight;
         private QuadBufferData[] _vertexBufferData;
-        private VertexBuffer<QuadBufferData> _vertexBuffer;
+        private VertexArrayBuffer<QuadBufferData> _vertexBuffer;
         private IndexBuffer _indexBuffer;
         private VertexArray<QuadBufferData> _vertexArray;
         private bool _disposedValue = false;
@@ -34,7 +34,7 @@ namespace OpenTKTutorial
 
             InitBufferData();
 
-            _vertexBuffer = new VertexBuffer<QuadBufferData>(_vertexBufferData);
+            _vertexBuffer = new VertexArrayBuffer<QuadBufferData>(_vertexBufferData);
             _indexBuffer = new IndexBuffer(new uint[] { 0, 1, 3, 1, 2, 3, 4, 5, 7, 5, 6, 7 });
 
             _vertexArray = new VertexArray<QuadBufferData>(_vertexBuffer, _indexBuffer);
