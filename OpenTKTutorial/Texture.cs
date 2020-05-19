@@ -11,56 +11,13 @@ namespace OpenTKTutorial
     public class Texture : IDisposable
     {
         private readonly int _textureId;
-        private readonly float[] _vertices = {
-            //      Positions      Texture Coordinates
-            //X       Y       Z         X     Y
-            -1f,     1f,     0.0f,     0.0f, 1.0f, // top left
-             1f,     1f,     0.0f,     1.0f, 1.0f, // top right
-             1f,    -1f,     0.0f,     1.0f, 0.0f, // bottom right
-            -1f,    -1f,     0.0f,     0.0f, 0.0f  // bottom left
-        };
-        private readonly uint[] _indices = {  // note that we start from 0!
-            0, 1, 3,   // first triangle
-            1, 2, 3    // second triangle
-        };
-
-        /*
-            First Triangle(Indices 0, 1, 3:
-
-    TopLeft(Indice 0)|---------/TopRight(Indice 1)
-                     |        /
-                     |       /
-                     |      /
-                     |     /
-                     |    /
-                     |   /
-                     |  /
-                     | /
-                     |/
-                     *BottomLeft(Indice 3)
-                                    
-
-            Second Triangle(Indices 1, 2, 3):
-
-                                 /|TopRight(Indice 1)
-                                / |
-                               /  |
-                              /   |
-                             /    |
-                            /     |
-                           /      |
-                          /       |
-                         /        |
-    BottomLeft(Indice 3)/_________|BottomRight(Indice 2)
-         */
         private bool _isBound;
         private bool _disposedValue = false;
         private float _angle;
-        private readonly VertexBuffer _vertexBuffer;
-        private readonly IndexBuffer _indexBuffer;
+
 
         #region Constructors
-        public Texture(string texturePath, ShaderProgram shader)
+        public Texture(string texturePath)
         {
             _textureId = GL.GenTexture();
             
@@ -69,28 +26,12 @@ namespace OpenTKTutorial
             LoadTextureData(texturePath);
 
             Unbind();
-
-            Use();
-
-            _vertexBuffer = new VertexBuffer(_vertices);
-            _indexBuffer = new IndexBuffer(_indices);
-            VA = new VertexArray(_vertexBuffer, _indexBuffer);
-
-            // Because there is 5 floats between the start of the first vertex and the start of the second,
-            // we set this to 5 * sizeof(float).
-            // This will now pass the new vertex array to the buffer.
-            SetupVertexShaderAttribute(shader, "aPosition", 3, 0);
-
-            // Next, we also setup texture coordinates. It works in much the same way.
-            // We add an offset of 3, since the first vertex coordinate comes after the first vertex
-            // and change the amount of data to 2 because there's only 2 floats for vertex coordinates
-            SetupVertexShaderAttribute(shader, "aTexCoord", 2, 3 * sizeof(float));
         }
         #endregion
 
 
         #region Props
-        public VertexArray VA { get; private set; }
+        public int TextureID => _textureId;
 
         public float X { get; set; }
 
@@ -121,18 +62,10 @@ namespace OpenTKTutorial
         }
 
         public NETColor TintColor { get; set; } = NETColor.White;
-
-        public int TotalIndices => _indices.Length;
         #endregion
 
 
         #region Public Methods
-        public void Use()
-        {
-            GL.BindTexture(TextureTarget.Texture2D, _textureId);
-        }
-
-
         /// <summary>
         /// Bind the texture for performing operations on it.
         /// </summary>
@@ -141,8 +74,7 @@ namespace OpenTKTutorial
             if (_isBound)
                 return;
 
-            GL.ActiveTexture(TextureUnit.Texture0);
-            GL.BindTexture(TextureTarget.Texture2D, _textureId);
+            GL.BindTexture(TextureTarget.Texture2D, TextureID);
 
             _isBound = true;
         }
@@ -175,6 +107,11 @@ namespace OpenTKTutorial
             if (_disposedValue)
                 return;
 
+            //NOTE: Finalizers cannot call this method and then invoke GL calls.
+            //GL calls are not on the same thread as the finalizer and they will not work.
+            //To avoid this problem, you have to make sure that all dispose methods are called
+            //manually for anything using these objects where they contain GL calls in there
+            //Dispose() methods
             Unbind();
             GL.DeleteTexture(_textureId);
 
@@ -184,22 +121,6 @@ namespace OpenTKTutorial
 
 
         #region Private Methods
-        /// <summary>
-        /// Sets up the vertex shader attribute.
-        /// </summary>
-        /// <param name="shaderProgram">The shader program that contains the vertex shader to setup.</param>
-        /// <param name="attrName">The name of the vertex shader attribute to setup.</param>
-        /// <param name="size">The size/stride of the vertex bufferdata.</param>
-        /// <param name="offSet">The offset of the vertex buffer data.</param>
-        private void SetupVertexShaderAttribute(ShaderProgram shaderProgram, string attrName, int size, int offSet)
-        {
-            //TODO: This needs to be called for each VAO and each texture has its own VAO
-            var vertexLocation = GL.GetAttribLocation(shaderProgram.ProgramId, attrName);
-            GL.EnableVertexAttribArray(vertexLocation);
-            GL.VertexAttribPointer(vertexLocation, size, VertexAttribPointerType.Float, false, 5 * sizeof(float), offSet);
-        }
-
-
         private void LoadTextureData(string texturePath)
         {
             //Load the image
@@ -241,7 +162,7 @@ namespace OpenTKTutorial
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
 
-            //Generate the texture
+            //Load the texture data to the GPU for the currently active texture slot
             GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, image.Width, image.Height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, pixels.ToArray());
         }
         #endregion

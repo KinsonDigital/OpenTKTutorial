@@ -5,18 +5,23 @@ using OpenToolkit.Graphics.OpenGL4;
 using System.IO;
 using System.Reflection;
 using NETColor = System.Drawing.Color;
+using System.ComponentModel;
 
 namespace OpenTKTutorial
 {
+    /*References to batch redering
+     * Cherno: https://www.youtube.com/watch?v=bw6JsLnx5Jg&list=PLlrATfBNZ98foTJPJ_Ev03o2oq3-GGOS2&index=31&t=0s
+     */
     public class Game : GameWindow
     {
         #region Private Fields
         private readonly string _appPathDir = $@"{Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)}\";
         private readonly string _contentDir;
         private readonly string _graphicsContent;
-        private Renderer _renderer;
         private Texture _linkTexture;
-        private readonly Texture _backgroundTexture;
+        private Texture _backgroundTexture;
+        private Renderer _renderer;
+        private bool _isShuttingDown;
         private double _elapsedTime;
         #endregion
 
@@ -28,19 +33,22 @@ namespace OpenTKTutorial
             _contentDir = $@"{_appPathDir}Content\";
             _graphicsContent = $@"{_contentDir}Graphics\";
             _renderer = new Renderer(Size.X, Size.Y);
-            _linkTexture = new Texture($"{_graphicsContent}Link.png", _renderer.Shader)
+
+            _backgroundTexture = new Texture($"{_graphicsContent}dungeon.png")
             {
-                X = 200,
+                X = Size.X / 2,
+                Y = Size.Y / 2
+            };
+
+            _linkTexture = new Texture($"{_graphicsContent}Link.png")
+            {
+                X = Size.Y / 2,
                 Y = Size.Y / 2,
                 Angle = 0,
                 TintColor = NETColor.FromArgb(125, 255, 255, 255)
             };
 
-            _backgroundTexture = new Texture($"{_graphicsContent}Dungeon.png", _renderer.Shader)
-            {
-                X = Size.X / 2,
-                Y = Size.Y / 2
-            };
+            _renderer = new Renderer(nativeWindowSettings.Size.X, nativeWindowSettings.Size.Y);
         }
         #endregion
 
@@ -48,14 +56,18 @@ namespace OpenTKTutorial
         #region Protected Methods
         protected override void OnLoad()
         {
-            GL.ClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+            
         }
 
 
         protected override void OnUpdateFrame(FrameEventArgs args)
         {
+            if (_isShuttingDown)
+                return;
+
             if (KeyboardState.IsKeyDown(Key.Escape))
                 Close();
+
 
             var totalTime = 4000;
 
@@ -87,10 +99,16 @@ namespace OpenTKTutorial
 
         protected override void OnRenderFrame(FrameEventArgs args)
         {
+            if (_isShuttingDown)
+                return;
+
             GL.Clear(ClearBufferMask.ColorBufferBit);
 
+
+            //_renderer.Render(new[] { _backgroundTexture, _linkTexture } );
             _renderer.Render(_backgroundTexture);
             _renderer.Render(_linkTexture);
+
 
             SwapBuffers();
 
@@ -100,17 +118,24 @@ namespace OpenTKTutorial
 
         protected override void OnResize(ResizeEventArgs e)
         {
+            //TODO: Setup renderer to updates its render surface width and height
             GL.Viewport(0, 0, Size.X, Size.Y);
 
             base.OnResize(e);
         }
 
-
-        protected override void OnUnload()
+        protected override void OnClosing(CancelEventArgs e)
         {
             _linkTexture.Dispose();
             _backgroundTexture.Dispose();
             _renderer.Dispose();
+            base.OnClosing(e);
+        }
+
+
+        protected override void OnUnload()
+        {
+            _isShuttingDown = true;
             base.OnUnload();
         }
         #endregion

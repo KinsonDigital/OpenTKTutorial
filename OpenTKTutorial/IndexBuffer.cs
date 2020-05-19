@@ -9,7 +9,9 @@ namespace OpenTKTutorial
     public class IndexBuffer : IDisposable
     {
         #region Private Fields
-        private int _bufferId;
+        //TODO:  Need to create a static list of bound buffers. This will allow  the ability
+        //to keep track if the buffer for a particular instance is bound
+        private int _id;
         private bool _isBound = false;//BindTexture is expensive.  This prevents the call if it is already bound
         private bool _disposedValue = false;
         #endregion
@@ -26,9 +28,9 @@ namespace OpenTKTutorial
                 throw new ArgumentNullException(nameof(data), "The param must not be null");
 
             Count = data.Length;
-            _bufferId = GL.GenBuffer();
-            Bind();
-            GL.BufferData(BufferTarget.ElementArrayBuffer, data.Length * sizeof(uint), data, BufferUsageHint.DynamicDraw);
+            _id = GL.GenBuffer();
+
+            SetLayout(data);
         }
         #endregion
 
@@ -42,7 +44,7 @@ namespace OpenTKTutorial
         /// <summary>
         /// The ID of the <see cref="IndexBuffer"/>.
         /// </summary>
-        public int BufferID => _bufferId;
+        public int ID => _id;
         #endregion
 
 
@@ -55,7 +57,7 @@ namespace OpenTKTutorial
             if (_isBound)
                 return;
 
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, _bufferId);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, _id);
             
             _isBound = true;
         }
@@ -83,12 +85,16 @@ namespace OpenTKTutorial
             Dispose(true);
             GC.SuppressFinalize(this);
         }
+        #endregion
 
 
-        /// <summary>
-        /// Cleans up unmanaged resources.
-        /// </summary>
-        ~IndexBuffer() => Dispose(false);
+        #region Private Methods
+        private void SetLayout(uint[] data)
+        {
+            Bind();
+            GL.BufferData(BufferTarget.ElementArrayBuffer, data.Length * sizeof(uint), data, BufferUsageHint.DynamicDraw);
+            Unbind();
+        }
         #endregion
 
 
@@ -104,7 +110,7 @@ namespace OpenTKTutorial
 
             //Clean up unmanaged resources
             Unbind();
-            GL.DeleteBuffers(1, ref _bufferId);
+            GL.DeleteBuffers(1, ref _id);
 
             _disposedValue = true;
         }

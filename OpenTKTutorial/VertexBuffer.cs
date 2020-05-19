@@ -7,10 +7,12 @@ namespace OpenTKTutorial
     /// <summary>
     /// A vertex buffer object used to hold and describe data for a the GLSL shader program.
     /// </summary>
-    public class VertexBuffer : IDisposable
+    public class VertexBuffer<T> : IDisposable where T : struct
     {
         #region Private Fields
-        private int _bufferId;
+        //TODO:  Need to create a static list of bound buffers. This will allow  the ability
+        //to keep track if the buffer for a particular instance is bound
+        private int _id;
         private bool _isBound = false;//BindTexture is expensive.  This prevents the call if it is already bound
         private bool _disposedValue = false;
         #endregion
@@ -22,12 +24,12 @@ namespace OpenTKTutorial
         /// </summary>
         /// <param name="gl">Provides access to OpenGL funtionality.</param>
         /// <param name="data">The vertex data to send to the GPU.</param>
-        public VertexBuffer(float[] data)
+        public VertexBuffer(T[] data)
         {
             if (data is null)
                 throw new ArgumentNullException(nameof(data), "The param must not be null");
 
-            _bufferId = GL.GenBuffer();
+            _id = GL.GenBuffer();
 
             SetLayout(data);
         }
@@ -38,7 +40,7 @@ namespace OpenTKTutorial
         /// <summary>
         /// Gets the ID of the <see cref="VertexBuffer"/>.
         /// </summary>
-        public int BufferID => _bufferId;
+        public int ID => _id;
         #endregion
 
 
@@ -51,7 +53,7 @@ namespace OpenTKTutorial
             if (_isBound)
                 return;
 
-            GL.BindBuffer(BufferTarget.ArrayBuffer, BufferID);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, ID);
 
             _isBound = true;
         }
@@ -81,12 +83,6 @@ namespace OpenTKTutorial
 
             GC.SuppressFinalize(this);
         }
-
-
-        /// <summary>
-        /// Cleans up unmanaged resources.
-        /// </summary>
-        ~VertexBuffer() => Dispose(false);
         #endregion
 
 
@@ -102,7 +98,7 @@ namespace OpenTKTutorial
 
             //Clean up unmanaged resources
             Unbind();
-            GL.DeleteBuffers(1, ref _bufferId);
+            GL.DeleteBuffers(1, ref _id);
 
             _disposedValue = true;
         }
@@ -115,10 +111,11 @@ namespace OpenTKTutorial
         /// </summary>
         /// <param name="data">The data to goto the GPU.</param>
         [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "<Pending>")]
-        private void SetLayout(float[] data)
+        private void SetLayout(T[] data)
         {
-            GL.BindBuffer(BufferTarget.ArrayBuffer, _bufferId);
-            GL.BufferData(BufferTarget.ArrayBuffer, data.Length * sizeof(float), data, BufferUsageHint.StaticDraw);
+            Bind();
+            GL.BufferData(BufferTarget.ArrayBuffer, data.Length * sizeof(float), data, BufferUsageHint.DynamicDraw);
+            Unbind();
         }
         #endregion
     }

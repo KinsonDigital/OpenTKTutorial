@@ -114,11 +114,5 @@ namespace OpenTKTutorial
             GL.DeleteProgram(_shaderProgramHandle);
             _disposedValue = true;
         }
-
-
-        ~Shader()
-        {
-            Dispose(false);
-        }
     }
 }
