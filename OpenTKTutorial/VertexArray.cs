@@ -29,7 +29,6 @@ namespace OpenTKTutorial
 
             Bind();
 
-            //TODO: Disable these and check if this still works
             GL.BindBuffer(BufferTarget.ArrayBuffer, vb.ID);
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, ib.ID);
 
