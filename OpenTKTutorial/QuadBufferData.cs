@@ -11,7 +11,5 @@ namespace OpenTKTutorial
         public Vector2 TextureCoords { get; set; }
 
         public Vector4 TintColor { get; set; }
-
-        public float TextureSlot { get; set; }
     }
 }
