@@ -1,10 +1,51 @@
+using GLFW;
+using OpenToolkit;
 using OpenToolkit.Graphics.OpenGL4;
 using OpenToolkit.Mathematics;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
+using System.Runtime.InteropServices;
 
 namespace OpenTKTutorial
 {
+    public class MyBindings : IBindingsContext
+    {
+        [DllImport("kernel32", SetLastError = true, CharSet = CharSet.Ansi)]
+        static extern IntPtr LoadLibrary([MarshalAs(UnmanagedType.LPStr)] string lpFileName);
+
+        [DllImport("opengl32.dll", EntryPoint = "wglGetProcAddress", CharSet = CharSet.Ansi, SetLastError = true, ExactSpelling = true)]
+        public static extern IntPtr wglGetProcAddress(string functionName);
+
+        [DllImport("kernel32", EntryPoint = "GetProcAddress", CharSet = CharSet.Ansi, ExactSpelling = true, SetLastError = true)]
+        public static extern IntPtr GetProcAddressKernal(IntPtr hModule, string procName);
+
+
+        public List<string> _functionsWithZeroPointer = new List<string>();
+
+        public IntPtr GetProcAddress(string procName)
+        {
+            if (procName == "glClear")
+            {
+
+            }
+
+            var result = wglGetProcAddress(procName);
+
+            if (result == IntPtr.Zero)
+            {
+                _functionsWithZeroPointer.Add(procName);
+
+                var libPointer = LoadLibrary("opengl32.dll");
+
+                result = GetProcAddressKernal(libPointer, procName);
+            }
+
+            return result;
+        }
+    }
+
+
     public class Renderer : IDisposable
     {
         #region Private Fields
@@ -52,7 +93,6 @@ namespace OpenTKTutorial
         {
             _vertexArray.Bind();
             texture.Bind();
-
 
             UpdateGPUColorData(texture.TintColor);
             UpdateGPUTransform(texture.X,
