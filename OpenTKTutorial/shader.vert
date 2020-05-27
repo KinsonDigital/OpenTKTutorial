@@ -15,7 +15,6 @@ uniform mat4 u_Transform;
 //used as input into the fragment shader
 out vec2 v_TexCoord;
 out vec4 v_TintClr;
-out float v_TexIndex;
 
 
 void main()
