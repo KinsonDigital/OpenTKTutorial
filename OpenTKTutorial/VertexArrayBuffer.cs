@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using OpenToolkit.Graphics.OpenGL4;
 
@@ -7,13 +8,10 @@ namespace OpenTKTutorial
     /// <summary>
     /// A vertex buffer object used to hold and describe data for a the GLSL shader program.
     /// </summary>
-    public class VertexBuffer<T> : IDisposable where T : struct
+    public class VertexArrayBuffer<T> : IDisposable where T : struct
     {
         #region Private Fields
-        //TODO:  Need to create a static list of bound buffers. This will allow  the ability
-        //to keep track if the buffer for a particular instance is bound
-        private int _id;
-        private bool _isBound = false;//BindTexture is expensive.  This prevents the call if it is already bound
+        private static readonly List<int> _boundBuffers = new List<int>();
         private bool _disposedValue = false;
         #endregion
 
@@ -24,14 +22,14 @@ namespace OpenTKTutorial
         /// </summary>
         /// <param name="gl">Provides access to OpenGL funtionality.</param>
         /// <param name="data">The vertex data to send to the GPU.</param>
-        public VertexBuffer(T[] data)
+        public VertexArrayBuffer(T[] data)
         {
             if (data is null)
                 throw new ArgumentNullException(nameof(data), "The param must not be null");
 
-            _id = GL.GenBuffer();
+            ID = GL.GenBuffer();
 
-            SetLayout(data);
+            UploadDataToGPU(data);
         }
         #endregion
 
@@ -40,7 +38,7 @@ namespace OpenTKTutorial
         /// <summary>
         /// Gets the ID of the <see cref="VertexBuffer"/>.
         /// </summary>
-        public int ID => _id;
+        public int ID { get; private set; }
         #endregion
 
 
@@ -50,12 +48,11 @@ namespace OpenTKTutorial
         /// </summary>
         public void Bind()
         {
-            if (_isBound)
+            if (_boundBuffers.Contains(ID))
                 return;
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, ID);
-
-            _isBound = true;
+            _boundBuffers.Add(ID);
         }
 
 
@@ -64,12 +61,11 @@ namespace OpenTKTutorial
         /// </summary>
         public void Unbind()
         {
-            if (!_isBound)
+            if (!_boundBuffers.Contains(ID))
                 return;
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
-
-            _isBound = false;
+            _boundBuffers.Remove(ID);
         }
 
 
@@ -80,7 +76,6 @@ namespace OpenTKTutorial
         public void Dispose()
         {
             Dispose(true);
-
             GC.SuppressFinalize(this);
         }
         #endregion
@@ -98,7 +93,9 @@ namespace OpenTKTutorial
 
             //Clean up unmanaged resources
             Unbind();
-            GL.DeleteBuffers(1, ref _id);
+
+            var id = ID;
+            GL.DeleteBuffers(1, ref id);
 
             _disposedValue = true;
         }
@@ -107,11 +104,11 @@ namespace OpenTKTutorial
 
         #region Private Methods
         /// <summary>
-        /// Sets up the data layout of the <see cref="VertexBuffer"/> on the GPU.
+        /// Uploads the given <paramref name="data"/> to the GPU.
         /// </summary>
-        /// <param name="data">The data to goto the GPU.</param>
+        /// <param name="data">The data to upload.</param>
         [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "<Pending>")]
-        private void SetLayout(T[] data)
+        private void UploadDataToGPU(T[] data)
         {
             Bind();
             GL.BufferData(BufferTarget.ArrayBuffer, data.Length * sizeof(float), data, BufferUsageHint.DynamicDraw);

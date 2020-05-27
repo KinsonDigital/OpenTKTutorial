@@ -32,7 +32,6 @@ namespace OpenTKTutorial
         {
             _contentDir = $@"{_appPathDir}Content\";
             _graphicsContent = $@"{_contentDir}Graphics\";
-            _renderer = new Renderer(Size.X, Size.Y);
 
             _backgroundTexture = new Texture($"{_graphicsContent}dungeon.png")
             {
@@ -42,7 +41,7 @@ namespace OpenTKTutorial
 
             _linkTexture = new Texture($"{_graphicsContent}Link.png")
             {
-                X = Size.Y / 2,
+                X = Size.X / 2,
                 Y = Size.Y / 2,
                 Angle = 0,
                 TintColor = NETColor.FromArgb(125, 255, 255, 255)
@@ -69,29 +68,29 @@ namespace OpenTKTutorial
                 Close();
 
 
-            var totalTime = 4000;
+            //var totalTime = 4000;
 
-            //Use easing functions to gradually change texture values
-            var alphaResult = (int)EasingFunctions.EaseOutBounce(_elapsedTime * 1000, 0, 255, totalTime);
+            ////Use easing functions to gradually change texture values
+            //var alphaResult = (int)EasingFunctions.EaseOutBounce(_elapsedTime * 1000, 0, 255, totalTime);
 
-            alphaResult = alphaResult > 255 ? 255 : alphaResult;
+            //alphaResult = alphaResult > 255 ? 255 : alphaResult;
 
-            _linkTexture.X = (float)EasingFunctions.EaseOutBounce(_elapsedTime * 1000, 200, 400, totalTime);
+            //_linkTexture.X = (float)EasingFunctions.EaseOutBounce(_elapsedTime * 1000, 200, 400, totalTime);
 
-            _linkTexture.TintColor = NETColor.FromArgb(alphaResult,
-                                                       _linkTexture.TintColor.R,
-                                                       _linkTexture.TintColor.G,
-                                                       _linkTexture.TintColor.B);
+            //_linkTexture.TintColor = NETColor.FromArgb(alphaResult,
+            //                                           _linkTexture.TintColor.R,
+            //                                           _linkTexture.TintColor.G,
+            //                                           _linkTexture.TintColor.B);
 
-            _linkTexture.Angle = (float)EasingFunctions.EaseOutBounce(_elapsedTime * 1000, 0, 360, totalTime);
+            //_linkTexture.Angle = (float)EasingFunctions.EaseOutBounce(_elapsedTime * 1000, 0, 360, totalTime);
 
-            _linkTexture.Size = (float)EasingFunctions.EaseOutBounce(_elapsedTime * 1000, 0.5f, 0.5f, totalTime);
+            //_linkTexture.Size = (float)EasingFunctions.EaseOutBounce(_elapsedTime * 1000, 0.5f, 0.5f, totalTime);
 
-            //If the total time for the easing functions
-            //to finish has expired, reset everything.
-            _elapsedTime = _elapsedTime * 1000 > totalTime
-                ? 0
-                : _elapsedTime += args.Time;
+            ////If the total time for the easing functions
+            ////to finish has expired, reset everything.
+            //_elapsedTime = _elapsedTime * 1000 > totalTime
+            //    ? 0
+            //    : _elapsedTime += args.Time;
 
             base.OnUpdateFrame(args);
         }
@@ -105,7 +104,6 @@ namespace OpenTKTutorial
             GL.Clear(ClearBufferMask.ColorBufferBit);
 
 
-            //_renderer.Render(new[] { _backgroundTexture, _linkTexture } );
             _renderer.Render(_backgroundTexture);
             _renderer.Render(_linkTexture);
 
@@ -123,6 +121,7 @@ namespace OpenTKTutorial
 
             base.OnResize(e);
         }
+
 
         protected override void OnClosing(CancelEventArgs e)
         {

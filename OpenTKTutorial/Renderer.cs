@@ -11,7 +11,7 @@ namespace OpenTKTutorial
         private readonly int _renderSurfaceWidth;
         private readonly int _renderSurfaceHeight;
         private QuadBufferData[] _vertexBufferData;
-        private VertexBuffer<QuadBufferData> _vertexBuffer;
+        private VertexArrayBuffer<QuadBufferData> _vertexBuffer;
         private IndexBuffer _indexBuffer;
         private VertexArray<QuadBufferData> _vertexArray;
         private bool _disposedValue = false;
@@ -34,8 +34,8 @@ namespace OpenTKTutorial
 
             InitBufferData();
 
-            _vertexBuffer = new VertexBuffer<QuadBufferData>(_vertexBufferData);
-            _indexBuffer = new IndexBuffer(new uint[] { 0, 1, 3, 1, 2, 3, 4, 5, 7, 5, 6, 7 });
+            _vertexBuffer = new VertexArrayBuffer<QuadBufferData>(_vertexBufferData);
+            _indexBuffer = new IndexBuffer(new uint[] { 0, 1, 3, 1, 2, 3, 4, 5 });
 
             _vertexArray = new VertexArray<QuadBufferData>(_vertexBuffer, _indexBuffer);
         }
@@ -97,28 +97,24 @@ namespace OpenTKTutorial
                     CornerVertice = new Vector3(-1, 1, 0),
                     TextureCoords = new Vector2(0, 1),
                     TintColor = Color.FromArgb(255, 255, 0, 255).ToVector4(),
-                    TextureSlot = 0
                 },
                 new QuadBufferData()
                 {
                     CornerVertice = new Vector3(1, 1, 0),
                     TextureCoords = new Vector2(1, 1),
                     TintColor = Color.FromArgb(255, 255, 0, 255).ToVector4(),
-                    TextureSlot = 0
                 },
                 new QuadBufferData()
                 {
                     CornerVertice = new Vector3(1, -1, 0),
                     TextureCoords = new Vector2(1, 0),
                     TintColor = Color.FromArgb(255, 255, 0, 255).ToVector4(),
-                    TextureSlot = 0
                 },
                 new QuadBufferData()
                 {
                     CornerVertice = new Vector3(-1, -1, 0),
                     TextureCoords = new Vector2(0, 0),
                     TintColor = Color.FromArgb(255, 255, 0, 255).ToVector4(),
-                    TextureSlot = 0
                 }
             };
         }

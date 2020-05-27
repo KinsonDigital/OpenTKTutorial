@@ -10,8 +10,7 @@ namespace OpenTKTutorial
 {
     public class Texture : IDisposable
     {
-        private readonly int _textureId;
-        private bool _isBound;
+        private static readonly List<int> _boundTextures = new List<int>();
         private bool _disposedValue = false;
         private float _angle;
 
@@ -19,7 +18,7 @@ namespace OpenTKTutorial
         #region Constructors
         public Texture(string texturePath)
         {
-            _textureId = GL.GenTexture();
+            ID = GL.GenTexture();
             
             Bind();
 
@@ -31,7 +30,7 @@ namespace OpenTKTutorial
 
 
         #region Props
-        public int TextureID => _textureId;
+        public int ID { get; private set; }
 
         public float X { get; set; }
 
@@ -71,12 +70,11 @@ namespace OpenTKTutorial
         /// </summary>
         public void Bind()
         {
-            if (_isBound)
+            if (_boundTextures.Contains(ID))
                 return;
 
-            GL.BindTexture(TextureTarget.Texture2D, TextureID);
-
-            _isBound = true;
+            GL.BindTexture(TextureTarget.Texture2D, ID);
+            _boundTextures.Add(ID);
         }
 
 
@@ -85,12 +83,11 @@ namespace OpenTKTutorial
         /// </summary>
         public void Unbind()
         {
-            if (!_isBound)
+            if (!_boundTextures.Contains(ID))
                 return;
 
             GL.BindTexture(TextureTarget.Texture2D, 0);
-
-            _isBound = false;
+            _boundTextures.Remove(ID);
         }
 
 
@@ -113,7 +110,7 @@ namespace OpenTKTutorial
             //manually for anything using these objects where they contain GL calls in there
             //Dispose() methods
             Unbind();
-            GL.DeleteTexture(_textureId);
+            GL.DeleteTexture(ID);
 
             _disposedValue = true;
         }
