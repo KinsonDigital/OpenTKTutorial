@@ -18,6 +18,10 @@ namespace OpenTKTutorial
             GL.GetInteger(GetPName.MaxTextureImageUnits,               out MaxTextureUnitsFragment);
 
         This has to do with finding out what our max texture slots are on the current GPU
+
+        TODO: Cache any location calls to improve performance.  Get all of our locations during
+        shader creation/compilation?  It might be a good idea to get a list of all of the attribute
+        and uniform names, then use those names to pull and cache all of the locations.
          */
         #region Private Fields
         private readonly int _renderSurfaceWidth;
@@ -72,7 +76,7 @@ namespace OpenTKTutorial
         }
 
 
-        public void Render_NEW(Texture texture)
+        public void Render(Texture texture)
         {
             /*TODO:
              * https://www.youtube.com/watch?v=5df3NvQNzUs&list=PLlrATfBNZ98foTJPJ_Ev03o2oq3-GGOS2&index=31
@@ -99,42 +103,6 @@ namespace OpenTKTutorial
             {
                 //Add the texture
                 _textures.Add(texture.TextureIndex, texture);
-            }
-        }
-
-
-        public void Render(Texture texture)
-        {
-            try
-            {
-                _vertexArray.Bind();
-                texture.Bind(Shader.ProgramId);
-
-
-                UpdateGPUColorData(texture.TintColor);
-                UpdateGPUTransform(texture.X,
-                    texture.Y,
-                    texture.Width,
-                    texture.Height,
-                    texture.Size,
-                    texture.Angle);
-
-                GL.DrawElements(PrimitiveType.Triangles, 8, DrawElementsType.UnsignedInt, IntPtr.Zero);
-
-                texture.Unbind();
-            }
-            catch (Exception ex)
-            {
-                throw;
-            }
-        }
-
-
-        public void Render(Texture[] textures)
-        {
-            foreach (var texture in textures)
-            {
-                Render(texture);
             }
         }
 
@@ -171,10 +139,10 @@ namespace OpenTKTutorial
                 var texture = _textures[kvp.Key];
 
                 //Update color in GPU
-                UpdateGPUColorData_NEW(kvp.Key, texture.TintColor);
+                UpdateGPUColorData(kvp.Key, texture.TintColor);
 
                 //Update transform in GPU
-                UpdateGPUTransform_NEW(kvp.Key,
+                UpdateGPUTransform(kvp.Key,
                     texture.X,
                     texture.Y,
                     texture.Width,
@@ -191,6 +159,7 @@ namespace OpenTKTutorial
             _hasBegun = false;
         }
 
+
         public void Dispose()
         {
             Dispose(true);
@@ -204,10 +173,6 @@ namespace OpenTKTutorial
         {
             _vertexBufferData = new[]
             {
-                //Quad 1
-                //  Vertex        TextCoord            Tint Color      Texture Index                             TransForm
-                //                                                                          Col 1           Col 2           Col 3           Col 4
-                //-1, 1, 0,         0, 1,           255, 255, 0, 255,       0,          0, 0, 0, 0,     0, 0, 0, 0,     0, 0, 0, 0,     0, 0, 0, 0,
                 new VertexData()
                 {
                     Vertex = new Vector3(-1, 1, 0),//Top Left
@@ -262,7 +227,7 @@ namespace OpenTKTutorial
         }
 
 
-        private void UpdateGPUColorData_NEW(int textureIndex, Color tintClr)
+        private void UpdateGPUColorData(int textureIndex, Color tintClr)
         {
             var tintClrData = tintClr.ToGLColor();
 
@@ -272,23 +237,7 @@ namespace OpenTKTutorial
         }
 
 
-        private void UpdateGPUColorData(Color tintClr)
-        {
-            for (int i = 0; i < _vertexBufferData.Length; i++)
-            {
-                //_vertexBufferData[i].TintColor = tintClr.ToGLColor();
-            }
-
-
-            var tintClrData = tintClr.ToGLColor();
-
-            var dataSize = 48 * sizeof(float);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBuffer.ID);
-            GL.BufferData(BufferTarget.ArrayBuffer, dataSize, _vertexBufferData, BufferUsageHint.DynamicDraw);
-        }
-
-
-        private void UpdateGPUTransform_NEW(int textureIndex, float x, float y, int width, int height, float size, float angle)
+        private void UpdateGPUTransform(int textureIndex, float x, float y, int width, int height, float size, float angle)
         {
             /*TODO: Need to think about possibly adding the transformation data into the
                 vertex buffer.  To find out which way is the best, we are going to need to
@@ -313,21 +262,6 @@ namespace OpenTKTutorial
             //TODO: Hard code location to improve performance
             var transDataLocation = GL.GetUniformLocation(Shader.ProgramId, "u_Transforms");
             GL.UniformMatrix4(transDataLocation + textureIndex, true, ref transMatrix);
-        }
-
-
-        private void UpdateGPUTransform(float x, float y, int width, int height, float size, float angle)
-        {
-            //Create and send the transformation data to the GPU
-            var transMatrix = BuildTransformationMatrix(x,
-                                               y,
-                                               width,
-                                               height,
-                                               size,
-                                               angle);
-            //TODO: Hard code location to improve performance
-            var transDataLocation = GL.GetUniformLocation(Shader.ProgramId, "u_Transform");
-            GL.UniformMatrix4(transDataLocation, true, ref transMatrix);
         }
 
 

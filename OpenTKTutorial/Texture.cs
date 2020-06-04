@@ -79,28 +79,6 @@ namespace OpenTKTutorial
             if (_boundTextures.Contains(ID))
                 return;
 
-            //Get the first free texture slot
-            //_textureSlot = TextureUnit.Texture0;
-
-            //if (_usedSlots.Count > 0)
-            //{
-            //    var usedSlotNumbers = new List<int>();
-
-            //    for (int i = 0; i < _usedSlots.Count; i++)
-            //    {
-            //        var slotName = Enum.GetName(typeof(TextureUnit), _usedSlots[i]);
-            //        var slotNumberString = slotName.Replace("Texture", "");
-            //        var slotNumber = int.Parse(slotNumberString);
-
-            //        usedSlotNumbers.Add(slotNumber);
-            //    }
-
-
-            //    var freeSlotNumber = usedSlotNumbers.Max() + 1;
-
-            //    _textureSlot = (TextureUnit)Enum.Parse(typeof(TextureUnit), $"Texture{freeSlotNumber}");
-            //}
-
             //TODO: Need to measure the performance of the
             /*ActiveTexture and BindTexture calls. The reason for this performance measuring
                 is because if you had 32 textures to render in 1 draw call, you would have to
@@ -112,6 +90,8 @@ namespace OpenTKTutorial
                 have many vertices for all of the geometry.  This might also mean that it would
                 be better to have a different shader setup for this. This setup would be better
                 for particle systems
+
+            TODO: Cache the "textures" location for improved performance.
             */
             GL.ActiveTexture(_textureSlot);
             GL.BindTexture(TextureTarget.Texture2D, ID);

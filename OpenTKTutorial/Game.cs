@@ -117,18 +117,11 @@ namespace OpenTKTutorial
         }
 
 
-        private void RenderOLD()
-        {
-            _renderer.Render(_backgroundTexture);
-            //_renderer.Render(_linkTexture);
-        }
-
-
         private void RenderNEW()
         {
             _renderer.Begin();
-            _renderer.Render_NEW(_backgroundTexture);
-            _renderer.Render_NEW(_linkTexture);
+            _renderer.Render(_backgroundTexture);
+            _renderer.Render(_linkTexture);
             _renderer.End();
         }
 
