@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Drawing;
 using OpenToolkit.Graphics.OpenGL4;
 
 namespace OpenTKTutorial
@@ -66,6 +67,32 @@ namespace OpenTKTutorial
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
             _boundBuffers.Remove(ID);
+        }
+
+
+        public void UpdateTintColor(int textureSlot, Color tintColor)
+        {
+            var totalVertexBytes = VertexDataAnalyzer.GetTotalBytesForStruct(typeof(VertexData));
+
+            var tintColorByteStart = VertexDataAnalyzer.GetVertexSubDataOffset(typeof(VertexData), nameof(VertexData.TintColor));
+
+            var glTintColor = tintColor.ToGLColor();
+
+            //Vert 1
+            var offset = (textureSlot * totalVertexBytes) + tintColorByteStart;
+            GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(offset), 4 * sizeof(float), ref glTintColor);
+
+            //Vert 2
+            offset = ((textureSlot + 1) * totalVertexBytes) + tintColorByteStart;
+            GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(offset), 4 * sizeof(float), ref glTintColor);
+
+            //Vert 3
+            offset = ((textureSlot + 2) * totalVertexBytes) + tintColorByteStart;
+            GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(offset), 4 * sizeof(float), ref glTintColor);
+
+            //Vert 4
+            offset = ((textureSlot + 3) * totalVertexBytes) + tintColorByteStart;
+            GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(offset), 4 * sizeof(float), ref glTintColor);
         }
 
 

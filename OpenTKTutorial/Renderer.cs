@@ -79,30 +79,6 @@ namespace OpenTKTutorial
 
         public void Render(Texture texture)
         {
-            /*TODO:
-             * https://www.youtube.com/watch?v=5df3NvQNzUs&list=PLlrATfBNZ98foTJPJ_Ev03o2oq3-GGOS2&index=31
-             * Add code here to dynamically update the data in our vertex buffer.  This should
-             * be done for each "render" call.
-             * 
-             * First you need to bind the buffer, then get a pointer to the buffer using GL.MapBuffer() and then using that
-             * pointer to update the buffer using GL.BufferSubData().  Last thing to do would be to use GL.UnmapBuffer().
-             * This will actually perform the update of the buffer data.
-             * 
-             * NOTE: Before you use the pointer, you must use pointer
-             * arithmetic to adjust the offset by how many bytes INTO the buffer you want the offset/start to go.
-             * 
-             * Steps:
-             *      1. Bind Texture
-             *      2. Bind buffer => glBindBuffer(GL_ARRAY_BUFFER, buffer_id)
-             *      3. GL.MapBuffer()
-             *      4. Adjust pointer to calcualte correct offset
-             *      5. Setup buffer to be send.
-             *          GL.BufferSubData(BufferTarget.ArrayBuffer, start, size_of_region_to_update, data_to_send);
-             *          Use the generic version to make use of the structs
-             *      6. GL.UnmapBuffer()
-             *          Actually updates the partial GPU data
-             */
-
             texture.Bind(Shader.ProgramId);
 
             var error = GL.GetError();
@@ -127,46 +103,7 @@ namespace OpenTKTutorial
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBuffer.ID);
 
 
-            ////top left
-            //GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(), sizeof(float) * 3, ref _vertexBufferData[0].Vertex);//vertice
-            //GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(sizeof(float) * 3), sizeof(float) * 2, ref _vertexBufferData[0].TextureCoord);//tex coord
-            //GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(sizeof(float) * 5), sizeof(float) * 1, ref _vertexBufferData[0].TextureIndex);//tex index
-
-            ////top right
-            //GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(sizeof(float) * 6), sizeof(float) * 3, ref _vertexBufferData[1].Vertex);//vertice
-            //GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(sizeof(float) * 10), sizeof(float) * 2, ref _vertexBufferData[1].TextureCoord);//tex coord
-            //GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(sizeof(float) * 11), sizeof(float) * 1, ref _vertexBufferData[1].TextureIndex);//tex index
-
-            ////bottom right
-            //GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(sizeof(float) * 12), sizeof(float) * 3, ref _vertexBufferData[2].Vertex);//vertice
-            //GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(sizeof(float) * 15), sizeof(float) * 2, ref _vertexBufferData[2].TextureCoord);//tex coord
-            //GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(sizeof(float) * 17), sizeof(float) * 1, ref _vertexBufferData[2].TextureIndex);//tex index
-
-            ////bottom left
-            //GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(sizeof(float) * 18), sizeof(float) * 3, ref _vertexBufferData[3].Vertex);//vertice
-            //GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(sizeof(float) * 21), sizeof(float) * 2, ref _vertexBufferData[3].TextureCoord);//tex coord
-            //GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(sizeof(float) * 23), sizeof(float) * 1, ref _vertexBufferData[3].TextureIndex);//tex index
-
-            var totalVertexBytes = VertexDataAnalyzer.GetTotalBytesForStruct(typeof(VertexData));
-            var tintColorByteStart = VertexDataAnalyzer.GetVertexSubDataOffset(typeof(VertexData), nameof(VertexData.TintColor));
-
-            var tintColor = texture.TintColor.ToGLColor();
-
-            //Vert 1
-            var offset = tintColorByteStart;
-            GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(offset), 4 * sizeof(float), ref tintColor);
-
-            //Vert 2
-            offset = (1 * totalVertexBytes) + tintColorByteStart;
-            GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(offset), 4 * sizeof(float), ref tintColor);
-
-            //Vert 3
-            offset = (2 * totalVertexBytes) + tintColorByteStart;
-            GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(offset), 4 * sizeof(float), ref tintColor);
-
-            //Vert 4
-            offset = (3 * totalVertexBytes) + tintColorByteStart;
-            GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(offset), 4 * sizeof(float), ref tintColor);
+            _vertexBuffer.UpdateTintColor(texture.TextureSlot, texture.TintColor);
 
             _vertexArray.Bind();
 
@@ -177,15 +114,15 @@ namespace OpenTKTutorial
             //This is needed so the End() method has the latest data for the transforms uniform GPU data.
             //Once vertex buffer is setup for transforms, there wont be a need for transform uniforms
             //anymore.
-            if (_textures.ContainsKey(texture.TextureIndex))
+            if (_textures.ContainsKey(texture.TextureSlot))
             {
                 //Just update the texture
-                _textures[texture.TextureIndex] = texture;
+                _textures[texture.TextureSlot] = texture;
             }
             else
             {
                 //Add the texture
-                _textures.Add(texture.TextureIndex, texture);
+                _textures.Add(texture.TextureSlot, texture);
             }
         }
 

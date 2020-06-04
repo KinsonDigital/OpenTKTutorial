@@ -42,7 +42,7 @@ namespace OpenTKTutorial
             {
                 X = Size.X / 2,
                 Y = Size.Y / 2,
-                TextureIndex = 0
+                TextureSlot = 0
             };
 
             _linkTexture = new Texture($"{_graphicsContent}Link.png", _renderer.Shader.ProgramId)
@@ -51,7 +51,7 @@ namespace OpenTKTutorial
                 Y = Size.Y / 2,
                 Angle = 0,
                 TintColor = NETColor.FromArgb(255, 0, 0, 255),
-                TextureIndex = 1
+                TextureSlot = 1
             };
         }
         #endregion

@@ -66,7 +66,7 @@ namespace OpenTKTutorial
 
         public NETColor TintColor { get; set; } = NETColor.White;
 
-        public int TextureIndex { get; set; }
+        public int TextureSlot { get; set; }
         #endregion
 
 
