@@ -8,7 +8,7 @@ namespace OpenTKTutorial
     /// <summary>
     /// A vertex buffer object used to hold and describe data for a the GLSL shader program.
     /// </summary>
-    public class VertexArrayBuffer<T> : IDisposable where T : struct
+    public class VertexBuffer<T> : IDisposable where T : struct
     {
         #region Private Fields
         private static readonly List<int> _boundBuffers = new List<int>();
@@ -21,15 +21,15 @@ namespace OpenTKTutorial
         /// Creates a new instance of <see cref="VertexBuffer"/>.
         /// </summary>
         /// <param name="gl">Provides access to OpenGL funtionality.</param>
-        /// <param name="data">The vertex data to send to the GPU.</param>
-        public VertexArrayBuffer(T[] data)
+        /// <param name="vertexData">The vertex data to send to the GPU.</param>
+        public VertexBuffer(T[] vertexData)
         {
-            if (data is null)
-                throw new ArgumentNullException(nameof(data), "The param must not be null");
+            if (vertexData is null)
+                throw new ArgumentNullException(nameof(vertexData), "The param must not be null");
 
             ID = GL.GenBuffer();
 
-            UploadDataToGPU(data);
+            AllocateVertexBufferMemory(vertexData);
         }
         #endregion
 
@@ -104,14 +104,34 @@ namespace OpenTKTutorial
 
         #region Private Methods
         /// <summary>
-        /// Uploads the given <paramref name="data"/> to the GPU.
+        /// Allocates the required amount of GPU memory to hold the vertex buffer data.
         /// </summary>
         /// <param name="data">The data to upload.</param>
         [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "<Pending>")]
-        private void UploadDataToGPU(T[] data)
+        private void AllocateVertexBufferMemory(T[] data)
         {
+            /*TODO: 
+             * To do this, you use the GL call below like this:
+             *      GL.BufferData(BufferTarget.ArrayBuffer, <total-size-in-bites-here>, null, BufferUsageHint.DynamicDraw);
+             *      
+             * This would have to using this GL call below only a single time for allocating the data on the GPU
+             * that is enough memory for the total number of quads that matches the total number of texture slots
+             * supported.
+             */
             Bind();
-            GL.BufferData(BufferTarget.ArrayBuffer, data.Length * sizeof(float), data, BufferUsageHint.DynamicDraw);
+
+            //NOTE: For right now, hard code enough memory to have 2 quads worth of data.
+            //The idea is that eventually this will be dynamic in the renderer depending on
+            //how many texture slots the GPU can handle
+
+            //2 quads of data. which is 8 vertices
+            var size = VertexDataAnalyzer.GetTotalBytesForStruct(data[0].GetType()) * data.Length;
+
+            //new way
+            //GL.BufferData(BufferTarget.ArrayBuffer, size, IntPtr.Zero, BufferUsageHint.DynamicDraw);
+
+            //old way
+            GL.BufferData(BufferTarget.ArrayBuffer, data.Length * (sizeof(float) * 10), data, BufferUsageHint.DynamicDraw);
             Unbind();
         }
         #endregion

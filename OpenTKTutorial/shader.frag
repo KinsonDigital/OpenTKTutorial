@@ -19,16 +19,5 @@ void main ()
 {
 	int index = int(v_TextureIndex);
 
-//	vec4 theColor = vec4(0, 0, 0, 255);//Black
-//
-//	if (v_TextureIndex == 0)
-//	{
-//		theColor = new vec4(255, 0, 0, 255);//Red
-//	}
-//	else if (v_TextureIndex == 1)
-//	{
-//		theColor = new vec4(0, 0, 255, 255);//Blue
-//	}
-
-	o_OutputColor = texture(textures[index], v_TexCoord) * v_TintClr;
+	o_OutputColor = texture(textures[index], v_TexCoord) * v_TintClr;//vec4(0, 0, 0, 255);
 }

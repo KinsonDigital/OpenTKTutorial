@@ -25,7 +25,7 @@ namespace OpenTKTutorial
 
         public Vector2 TextureCoord;//Location 1 | aTexCoord
 
-        //public Vector4 TintColor;//Location 2 | aTintColor
+        public Vector4 TintColor;//Location 2 | aTintColor
 
         public float TextureIndex;//Location 3 | aTextureIndex 
     }

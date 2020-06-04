@@ -1,6 +1,8 @@
 ﻿using OpenToolkit.Mathematics;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Text;
 
 namespace OpenTKTutorial
@@ -28,13 +30,14 @@ namespace OpenTKTutorial
             { typeof(Vector4), sizeof(float) * 4 },
             { typeof(Vector4i), sizeof(int) * 4 },
             { typeof(Vector3d), sizeof(double) * 3 },
-            { typeof(Vector4d), sizeof(double) * 4 }
+            { typeof(Vector4d), sizeof(double) * 4 },
+            { typeof(Matrix4), sizeof(float) * 16 }
         };
 
 
-        public static int GetTotalBytesForStruct<T>(T structType) where T : Type
+        public static int GetTotalBytesForStruct(Type structType)
         {
-            if (!structType.IsValueType || structType.IsEnum)
+            if (!IsStruct(structType))
                 throw new Exception($"The given '{nameof(structType)}' must be a struct.");
 
             var publicFields = structType.GetFields();
@@ -52,5 +55,47 @@ namespace OpenTKTutorial
 
             return result;
         }
+
+
+        public static int GetVertexSubDataOffset(Type structType, string subDataName)
+        {
+            if (!IsStruct(structType))
+                throw new Exception($"The given '{nameof(structType)}' must be a struct.");
+
+            var publicFields = structType.GetFields();
+            var result = 0;
+
+
+            //If any types are not of the valid type list, throw an exception
+            foreach (var field in publicFields)
+            {
+                if (!_validTypeSizes.ContainsKey(field.FieldType))
+                    throw new Exception($"The type '{field.FieldType}' is not allowed in vertex buffer data structure.");
+
+                //If the type is not the field of the given name.
+                //Get all of the fields sequentially up unto the sub data name field
+                if (field.Name != subDataName)
+                {
+                    result += _validTypeSizes[field.FieldType];
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+
+            return result;
+        }
+
+
+        public static int GetVertexDataOffset<T>(T[] vertexData, int vertexIndex, string subDataName)
+        {
+
+            return -1;
+        }
+
+
+        private static bool IsStruct(Type type) => type.IsValueType && !type.IsEnum;
     }
 }

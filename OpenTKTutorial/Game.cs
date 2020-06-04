@@ -30,6 +30,8 @@ namespace OpenTKTutorial
         public Game(GameWindowSettings gameWindowSettings, NativeWindowSettings nativeWindowSettings)
             : base(gameWindowSettings, nativeWindowSettings)
         {
+            var totalBytes = VertexDataAnalyzer.GetTotalBytesForStruct(typeof(VertexData));
+
             _contentDir = $@"{_appPathDir}Content\";
             _graphicsContent = $@"{_contentDir}Graphics\";
 
@@ -51,7 +53,6 @@ namespace OpenTKTutorial
                 TintColor = NETColor.FromArgb(255, 0, 0, 255),
                 TextureIndex = 1
             };
-
         }
         #endregion
 
@@ -121,7 +122,7 @@ namespace OpenTKTutorial
         {
             _renderer.Begin();
             _renderer.Render(_backgroundTexture);
-            _renderer.Render(_linkTexture);
+            //_renderer.Render(_linkTexture);
             _renderer.End();
         }
 

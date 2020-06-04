@@ -17,7 +17,7 @@ namespace OpenTKTutorial
         /// </summary>
         /// <param name="vb">The <see cref="VertexBuffer"/> and <see cref="IndexBuffer"/> required to create the <see cref="VertextArray"/>.</param>
         /// <param name="ib">The <see cref="IndexBuffer"/> that describes the layout of the <see cref="VertextBuffer"/> for the <see cref="VertexArray"/>.</param>
-        public VertexArray(VertexArrayBuffer<T> vb, IndexBuffer ib)
+        public VertexArray(VertexBuffer<T> vb, IndexBuffer ib)
         {
             if (vb is null)
                 throw new ArgumentNullException(nameof(vb), "The param must not be null");
@@ -34,22 +34,22 @@ namespace OpenTKTutorial
 
             //Setup aPosition attribute
             GL.EnableVertexArrayAttrib(ID, 0);
-            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 10 * sizeof(float), 0);
 
 
             //Setup aTexCoord attribute
             GL.EnableVertexArrayAttrib(ID, 1);
-            GL.VertexAttribPointer(1, 2, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
+            GL.VertexAttribPointer(1, 2, VertexAttribPointerType.Float, false, 10 * sizeof(float), 3 * sizeof(float));
 
 
             //Setup aTintColor attribute
-            //GL.EnableVertexArrayAttrib(ID, 2);
-            //GL.VertexAttribPointer(2, 4, VertexAttribPointerType.Float, false, 10 * sizeof(float), 5 * sizeof(float));
+            GL.EnableVertexArrayAttrib(ID, 2);
+            GL.VertexAttribPointer(2, 4, VertexAttribPointerType.Float, false, 10 * sizeof(float), 5 * sizeof(float));
 
 
             //Setup aTextureIndex attribute
-            GL.EnableVertexArrayAttrib(ID, 2);
-            GL.VertexAttribPointer(2, 1, VertexAttribPointerType.Float, false, 6 * sizeof(float), 5 * sizeof(float));
+            GL.EnableVertexArrayAttrib(ID, 3);
+            GL.VertexAttribPointer(3, 1, VertexAttribPointerType.Float, false, 10 * sizeof(float), 9 * sizeof(float));
         }
         #endregion
 
