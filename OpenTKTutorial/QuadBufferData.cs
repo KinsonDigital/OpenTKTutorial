@@ -1,15 +1,17 @@
-﻿using OpenToolkit.Mathematics;
-using System.Runtime.InteropServices;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
 
 namespace OpenTKTutorial
 {
-    [StructLayout(LayoutKind.Sequential)]
-    public struct QuadBufferData
+    public class QuadBufferData
     {
-        public Vector3 CornerVertice { get; set; }
+        private List<VertexData> _vertexData = new List<VertexData>();
 
-        public Vector2 TextureCoords { get; set; }
 
-        public Vector4 TintColor { get; set; }
+        public void AddQuad()
+        {
+
+        }
     }
 }

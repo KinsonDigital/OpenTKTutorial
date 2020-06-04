@@ -33,21 +33,25 @@ namespace OpenTKTutorial
             _contentDir = $@"{_appPathDir}Content\";
             _graphicsContent = $@"{_contentDir}Graphics\";
 
-            _backgroundTexture = new Texture($"{_graphicsContent}dungeon.png")
+            _renderer = new Renderer(nativeWindowSettings.Size.X, nativeWindowSettings.Size.Y);
+
+
+            _backgroundTexture = new Texture($"{_graphicsContent}dungeon.png", _renderer.Shader.ProgramId)
             {
                 X = Size.X / 2,
-                Y = Size.Y / 2
+                Y = Size.Y / 2,
+                TextureIndex = 0
             };
 
-            _linkTexture = new Texture($"{_graphicsContent}Link.png")
+            _linkTexture = new Texture($"{_graphicsContent}Link.png", _renderer.Shader.ProgramId)
             {
                 X = Size.X / 2,
                 Y = Size.Y / 2,
                 Angle = 0,
-                TintColor = NETColor.FromArgb(125, 255, 255, 255)
+                TintColor = NETColor.FromArgb(255, 0, 0, 255),
+                TextureIndex = 1
             };
 
-            _renderer = new Renderer(nativeWindowSettings.Size.X, nativeWindowSettings.Size.Y);
         }
         #endregion
 
@@ -104,13 +108,28 @@ namespace OpenTKTutorial
             GL.Clear(ClearBufferMask.ColorBufferBit);
 
 
-            _renderer.Render(_backgroundTexture);
-            _renderer.Render(_linkTexture);
-
+            //RenderOLD();
+            RenderNEW();
 
             SwapBuffers();
 
             base.OnRenderFrame(args);
+        }
+
+
+        private void RenderOLD()
+        {
+            _renderer.Render(_backgroundTexture);
+            //_renderer.Render(_linkTexture);
+        }
+
+
+        private void RenderNEW()
+        {
+            _renderer.Begin();
+            _renderer.Render_NEW(_backgroundTexture);
+            _renderer.Render_NEW(_linkTexture);
+            _renderer.End();
         }
 
 

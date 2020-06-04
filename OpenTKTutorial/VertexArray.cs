@@ -34,17 +34,22 @@ namespace OpenTKTutorial
 
             //Setup aPosition attribute
             GL.EnableVertexArrayAttrib(ID, 0);
-            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 9 * sizeof(float), 0);
+            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
 
 
             //Setup aTexCoord attribute
             GL.EnableVertexArrayAttrib(ID, 1);
-            GL.VertexAttribPointer(1, 2, VertexAttribPointerType.Float, false, 9 * sizeof(float), 3 * sizeof(float));
+            GL.VertexAttribPointer(1, 2, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
 
 
-            //Setup u_TintClr attribute
+            //Setup aTintColor attribute
+            //GL.EnableVertexArrayAttrib(ID, 2);
+            //GL.VertexAttribPointer(2, 4, VertexAttribPointerType.Float, false, 10 * sizeof(float), 5 * sizeof(float));
+
+
+            //Setup aTextureIndex attribute
             GL.EnableVertexArrayAttrib(ID, 2);
-            GL.VertexAttribPointer(2, 4, VertexAttribPointerType.Float, false, 9 * sizeof(float), 5 * sizeof(float));
+            GL.VertexAttribPointer(2, 1, VertexAttribPointerType.Float, false, 6 * sizeof(float), 5 * sizeof(float));
         }
         #endregion
 

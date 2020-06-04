@@ -1,20 +1,34 @@
 using OpenToolkit.Graphics.OpenGL4;
 using OpenToolkit.Mathematics;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
+using System.Threading;
 
 namespace OpenTKTutorial
 {
     public class Renderer : IDisposable
     {
+        /* TODO:  Look into these
+         * GL.GetInteger(GetPName.MaxCombinedTextureImageUnits,       out MaxTextureUnitsCombined);
+            GL.GetInteger(GetPName.MaxVertexTextureImageUnits,         out MaxTextureUnitsVertex);
+            GL.GetInteger(GetPName.MaxGeometryTextureImageUnits,       out MaxTextureUnitsGeometry);
+            GL.GetInteger(GetPName.MaxTessControlTextureImageUnits,    out MaxTextureUnitsTessControl);
+            GL.GetInteger(GetPName.MaxTessEvaluationTextureImageUnits, out MaxTextureUnitsTessEval);
+            GL.GetInteger(GetPName.MaxTextureImageUnits,               out MaxTextureUnitsFragment);
+
+        This has to do with finding out what our max texture slots are on the current GPU
+         */
         #region Private Fields
         private readonly int _renderSurfaceWidth;
         private readonly int _renderSurfaceHeight;
-        private QuadBufferData[] _vertexBufferData;
-        private VertexArrayBuffer<QuadBufferData> _vertexBuffer;
+        private VertexData[] _vertexBufferData;
+        private VertexArrayBuffer<VertexData> _vertexBuffer;
         private IndexBuffer _indexBuffer;
-        private VertexArray<QuadBufferData> _vertexArray;
+        private VertexArray<VertexData> _vertexArray;
         private bool _disposedValue = false;
+        private bool _hasBegun;
+        private Dictionary<int, Texture> _textures = new Dictionary<int, Texture>();
         #endregion
 
 
@@ -34,10 +48,14 @@ namespace OpenTKTutorial
 
             InitBufferData();
 
-            _vertexBuffer = new VertexArrayBuffer<QuadBufferData>(_vertexBufferData);
-            _indexBuffer = new IndexBuffer(new uint[] { 0, 1, 3, 1, 2, 3, 4, 5 });
+            _vertexBuffer = new VertexArrayBuffer<VertexData>(_vertexBufferData);
+            _indexBuffer = new IndexBuffer(new uint[]
+            {
+                0, 1, 3, 1, 2, 3, //Quad 1
+                4, 5, 7, 5, 6, 7  //Quad 2
+            });
 
-            _vertexArray = new VertexArray<QuadBufferData>(_vertexBuffer, _indexBuffer);
+            _vertexArray = new VertexArray<VertexData>(_vertexBuffer, _indexBuffer);
         }
         #endregion
 
@@ -48,25 +66,67 @@ namespace OpenTKTutorial
 
 
         #region Public Methods
+        public void Begin()
+        {
+            _hasBegun = true;
+        }
+
+
+        public void Render_NEW(Texture texture)
+        {
+            /*TODO:
+             * https://www.youtube.com/watch?v=5df3NvQNzUs&list=PLlrATfBNZ98foTJPJ_Ev03o2oq3-GGOS2&index=31
+             * Add code here to dynamically update the data in our vertex buffer.  This should
+             * be done for each "render" call.
+             * 
+             * Steps:
+             *      1. Bind buffer => glBindBuffer(GL_ARRAY_BUFFER, buffer_id)
+             *      2. glBufferSubData()
+             *      3. GL.BufferSubData(BufferTarget.ArrayBuffer, start, size_of_region_to_update, data_to_send);
+             *          Use the generic version to make use of the structs
+             *      4. 
+             */
+
+            _vertexArray.Bind();
+
+            //Update the list of textures
+            if (_textures.ContainsKey(texture.TextureIndex))
+            {
+                //Just update the texture
+                _textures[texture.TextureIndex] = texture;
+            }
+            else
+            {
+                //Add the texture
+                _textures.Add(texture.TextureIndex, texture);
+            }
+        }
+
+
         public void Render(Texture texture)
         {
-            _vertexArray.Bind();
-            texture.Bind();
+            try
+            {
+                _vertexArray.Bind();
+                texture.Bind(Shader.ProgramId);
 
 
-            UpdateGPUColorData(texture.TintColor);
-            UpdateGPUTransform(texture.X,
-                texture.Y,
-                texture.Width,
-                texture.Height,
-                texture.Size,
-                texture.Angle);
+                UpdateGPUColorData(texture.TintColor);
+                UpdateGPUTransform(texture.X,
+                    texture.Y,
+                    texture.Width,
+                    texture.Height,
+                    texture.Size,
+                    texture.Angle);
 
+                GL.DrawElements(PrimitiveType.Triangles, 8, DrawElementsType.UnsignedInt, IntPtr.Zero);
 
-            //TODO: Try and use 4 instead of 8
-            GL.DrawElements(PrimitiveType.Triangles, 8, DrawElementsType.UnsignedInt, IntPtr.Zero);
-
-            texture.Unbind();
+                texture.Unbind();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
 
 
@@ -78,6 +138,58 @@ namespace OpenTKTutorial
             }
         }
 
+
+        public void End()
+        {
+            if (!_hasBegun)
+                throw new Exception("Must call begin first");
+
+            var dataSize = 48 * sizeof(float);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBuffer.ID);
+
+            /*TODO:
+             * https://www.youtube.com/watch?v=5df3NvQNzUs&list=PLlrATfBNZ98foTJPJ_Ev03o2oq3-GGOS2&index=31
+             * Refer to the TODO comment in the UpdateGPUTransform_NEW() method.
+             * This would have to using this GL call below only a single time for allocating the data on the GPU
+             * that is enough memory for the total number of quads that matches the total number of texture slots
+             * supported.
+             * 
+             * To do this, you use the GL call below like this:
+             *      GL.BufferData(BufferTarget.ArrayBuffer, <total-size-in-bites-here>, null, BufferUsageHint.DynamicDraw);
+             */
+            GL.BufferData(BufferTarget.ArrayBuffer, dataSize, _vertexBufferData, BufferUsageHint.DynamicDraw);
+
+
+            foreach (var kvp in _textures)
+            {
+                _textures[kvp.Key].Bind(Shader.ProgramId);
+            }
+
+
+            foreach (var kvp in _textures)
+            {
+                var texture = _textures[kvp.Key];
+
+                //Update color in GPU
+                UpdateGPUColorData_NEW(kvp.Key, texture.TintColor);
+
+                //Update transform in GPU
+                UpdateGPUTransform_NEW(kvp.Key,
+                    texture.X,
+                    texture.Y,
+                    texture.Width,
+                    texture.Height,
+                    texture.Size,
+                    texture.Angle);
+            }
+
+            GL.DrawElements(PrimitiveType.Triangles, 12, DrawElementsType.UnsignedInt, IntPtr.Zero);
+
+            foreach (var kvp in _textures)
+                _textures[kvp.Key].Unbind();
+
+            _hasBegun = false;
+        }
 
         public void Dispose()
         {
@@ -91,32 +203,72 @@ namespace OpenTKTutorial
         private void InitBufferData()
         {
             _vertexBufferData = new[]
-{
-                new QuadBufferData()
+            {
+                //Quad 1
+                //  Vertex        TextCoord            Tint Color      Texture Index                             TransForm
+                //                                                                          Col 1           Col 2           Col 3           Col 4
+                //-1, 1, 0,         0, 1,           255, 255, 0, 255,       0,          0, 0, 0, 0,     0, 0, 0, 0,     0, 0, 0, 0,     0, 0, 0, 0,
+                new VertexData()
                 {
-                    CornerVertice = new Vector3(-1, 1, 0),
-                    TextureCoords = new Vector2(0, 1),
-                    TintColor = Color.FromArgb(255, 255, 0, 255).ToVector4(),
+                    Vertex = new Vector3(-1, 1, 0),//Top Left
+                    TextureCoord = new Vector2(0, 1),
+                    TextureIndex = 0
                 },
-                new QuadBufferData()
+                new VertexData()
                 {
-                    CornerVertice = new Vector3(1, 1, 0),
-                    TextureCoords = new Vector2(1, 1),
-                    TintColor = Color.FromArgb(255, 255, 0, 255).ToVector4(),
+                    Vertex = new Vector3(1, 1, 0),//Top Right
+                    TextureCoord = new Vector2(1, 1),
+                    TextureIndex = 0
                 },
-                new QuadBufferData()
+                new VertexData()
                 {
-                    CornerVertice = new Vector3(1, -1, 0),
-                    TextureCoords = new Vector2(1, 0),
-                    TintColor = Color.FromArgb(255, 255, 0, 255).ToVector4(),
+                    Vertex = new Vector3(1, -1, 0),//Bottom Right
+                    TextureCoord = new Vector2(1, 0),
+                    TextureIndex = 0
                 },
-                new QuadBufferData()
+                new VertexData()
                 {
-                    CornerVertice = new Vector3(-1, -1, 0),
-                    TextureCoords = new Vector2(0, 0),
-                    TintColor = Color.FromArgb(255, 255, 0, 255).ToVector4(),
+                    Vertex = new Vector3(-1, -1, 0),//Bottom Left
+                    TextureCoord = new Vector2(0, 0),
+                    TextureIndex = 0
+                },
+
+                //Quad 2
+                new VertexData()
+                {
+                    Vertex = new Vector3(-1, 1, 0),
+                    TextureCoord = new Vector2(0, 1),
+                    TextureIndex = 1
+                },
+                new VertexData()
+                {
+                    Vertex = new Vector3(1, 1, 0),
+                    TextureCoord = new Vector2(1, 1),
+                    TextureIndex = 1
+                },
+                new VertexData()
+                {
+                    Vertex = new Vector3(1, -1, 0),
+                    TextureCoord = new Vector2(1, 0),
+                    TextureIndex = 1
+                },
+                new VertexData()
+                {
+                    Vertex = new Vector3(-1, -1, 0),
+                    TextureCoord = new Vector2(0, 0),
+                    TextureIndex = 1
                 }
             };
+        }
+
+
+        private void UpdateGPUColorData_NEW(int textureIndex, Color tintClr)
+        {
+            var tintClrData = tintClr.ToGLColor();
+
+            //TODO: Hard code location to improve performance
+            var tintClrLocation = GL.GetUniformLocation(Shader.ProgramId, "u_TintColor");
+            GL.Uniform4(tintClrLocation + textureIndex, tintClrData);
         }
 
 
@@ -124,13 +276,45 @@ namespace OpenTKTutorial
         {
             for (int i = 0; i < _vertexBufferData.Length; i++)
             {
-                _vertexBufferData[i].TintColor = tintClr.ToGLColor();
+                //_vertexBufferData[i].TintColor = tintClr.ToGLColor();
             }
+
+
+            var tintClrData = tintClr.ToGLColor();
 
             var dataSize = 48 * sizeof(float);
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBuffer.ID);
             GL.BufferData(BufferTarget.ArrayBuffer, dataSize, _vertexBufferData, BufferUsageHint.DynamicDraw);
         }
+
+
+        private void UpdateGPUTransform_NEW(int textureIndex, float x, float y, int width, int height, float size, float angle)
+        {
+            /*TODO: Need to think about possibly adding the transformation data into the
+                vertex buffer.  To find out which way is the best, we are going to need to
+                do some perf testing to see if using uniforms or vertex buffers are the
+                best performance vs easier to use to do this.
+
+                The idea here is that instead of using vertex data that holds the vertices,
+                and the uniform array for holding the matrices for every single quad,
+                we could just update the vertices themselves for that "section" of data
+                for all of the quads before we perform our quad.
+
+            */
+
+            //Create and send the transformation data to the GPU
+            var transMatrix = BuildTransformationMatrix(x,
+                y,
+                width,
+                height,
+                size,
+                angle);
+
+            //TODO: Hard code location to improve performance
+            var transDataLocation = GL.GetUniformLocation(Shader.ProgramId, "u_Transforms");
+            GL.UniformMatrix4(transDataLocation + textureIndex, true, ref transMatrix);
+        }
+
 
         private void UpdateGPUTransform(float x, float y, int width, int height, float size, float angle)
         {
@@ -141,7 +325,7 @@ namespace OpenTKTutorial
                                                height,
                                                size,
                                                angle);
-
+            //TODO: Hard code location to improve performance
             var transDataLocation = GL.GetUniformLocation(Shader.ProgramId, "u_Transform");
             GL.UniformMatrix4(transDataLocation, true, ref transMatrix);
         }
