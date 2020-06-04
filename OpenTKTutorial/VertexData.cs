@@ -21,12 +21,12 @@ namespace OpenTKTutorial
     [StructLayout(LayoutKind.Sequential)]
     public struct VertexData
     {
-        public Vector3 Vertex { get; set; }//Location 0 | aPosition
+        public Vector3 Vertex;//Location 0 | aPosition
 
-        public Vector2 TextureCoord { get; set; }//Location 1 | aTexCoord
+        public Vector2 TextureCoord;//Location 1 | aTexCoord
 
-        //public Vector4 TintColor { get; set; }//Location 2 | aTintColor
+        //public Vector4 TintColor;//Location 2 | aTintColor
 
-        public float TextureIndex { get; set; }//Location 3 | aTextureIndex 
+        public float TextureIndex;//Location 3 | aTextureIndex 
     }
 }

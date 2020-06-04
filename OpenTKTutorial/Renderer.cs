@@ -3,6 +3,7 @@ using OpenToolkit.Mathematics;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace OpenTKTutorial
@@ -85,10 +86,8 @@ namespace OpenTKTutorial
              * 
              * Steps:
              *      1. Bind buffer => glBindBuffer(GL_ARRAY_BUFFER, buffer_id)
-             *      2. glBufferSubData()
-             *      3. GL.BufferSubData(BufferTarget.ArrayBuffer, start, size_of_region_to_update, data_to_send);
+             *      2. GL.BufferSubData(BufferTarget.ArrayBuffer, start, size_of_region_to_update, data_to_send);
              *          Use the generic version to make use of the structs
-             *      4. 
              */
 
             _vertexArray.Bind();
@@ -117,7 +116,7 @@ namespace OpenTKTutorial
 
             /*TODO:
              * https://www.youtube.com/watch?v=5df3NvQNzUs&list=PLlrATfBNZ98foTJPJ_Ev03o2oq3-GGOS2&index=31
-             * Refer to the TODO comment in the UpdateGPUTransform_NEW() method.
+             * Refer to the TODO comment in the UpdateGPUTransform() method.
              * This would have to using this GL call below only a single time for allocating the data on the GPU
              * that is enough memory for the total number of quads that matches the total number of texture slots
              * supported.
