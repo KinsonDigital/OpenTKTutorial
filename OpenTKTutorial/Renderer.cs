@@ -10,20 +10,6 @@ namespace OpenTKTutorial
 {
     public class Renderer : IDisposable
     {
-        /* TODO:  Look into these
-         * GL.GetInteger(GetPName.MaxCombinedTextureImageUnits,       out MaxTextureUnitsCombined);
-            GL.GetInteger(GetPName.MaxVertexTextureImageUnits,         out MaxTextureUnitsVertex);
-            GL.GetInteger(GetPName.MaxGeometryTextureImageUnits,       out MaxTextureUnitsGeometry);
-            GL.GetInteger(GetPName.MaxTessControlTextureImageUnits,    out MaxTextureUnitsTessControl);
-            GL.GetInteger(GetPName.MaxTessEvaluationTextureImageUnits, out MaxTextureUnitsTessEval);
-            GL.GetInteger(GetPName.MaxTextureImageUnits,               out MaxTextureUnitsFragment);
-
-        This has to do with finding out what our max texture slots are on the current GPU
-
-        TODO: Cache any location calls to improve performance.  Get all of our locations during
-        shader creation/compilation?  It might be a good idea to get a list of all of the attribute
-        and uniform names, then use those names to pull and cache all of the locations.
-         */
         #region Private Fields
         private readonly int _renderSurfaceWidth;
         private readonly int _renderSurfaceHeight;
@@ -33,6 +19,7 @@ namespace OpenTKTutorial
         private VertexArray<VertexData> _vertexArray;
         private bool _disposedValue = false;
         private bool _hasBegun;
+        private int _totalTextureSlots = -1;
         private Dictionary<int, Texture> _textures = new Dictionary<int, Texture>();
         #endregion
 
@@ -40,6 +27,17 @@ namespace OpenTKTutorial
         #region Constructors
         public Renderer(int renderSurfaceWidth, int renderSurfaceHeight)
         {
+            var maxVertexStageTextureSlots = -1;
+            var maxFragmentStageTextureSlots = -1;
+
+            //Get the total number of available texture slots for the vertex and fragment shaders
+            GL.GetInteger(GetPName.MaxVertexTextureImageUnits, out maxVertexStageTextureSlots);
+            GL.GetInteger(GetPName.MaxTextureImageUnits, out maxFragmentStageTextureSlots);
+
+            _totalTextureSlots = maxVertexStageTextureSlots < maxFragmentStageTextureSlots
+                ? maxVertexStageTextureSlots
+                : maxFragmentStageTextureSlots;
+
             Shader = new ShaderProgram("shader.vert", "shader.frag");
 
             _renderSurfaceWidth = renderSurfaceWidth;
@@ -53,7 +51,8 @@ namespace OpenTKTutorial
 
             InitBufferData();
 
-            _vertexBuffer = new VertexBuffer<VertexData>(_vertexBufferData);
+            _vertexBuffer = new VertexBuffer<VertexData>(_vertexBufferData, 1);
+
             _indexBuffer = new IndexBuffer(new uint[]
             {
                 0, 1, 3, 1, 2, 3, //Quad 1

@@ -14,6 +14,7 @@ namespace OpenTKTutorial
         #region Private Fields
         private static readonly List<int> _boundBuffers = new List<int>();
         private bool _disposedValue = false;
+        private int _totalTextureSlots = 0;
         #endregion
 
 
@@ -23,11 +24,12 @@ namespace OpenTKTutorial
         /// </summary>
         /// <param name="gl">Provides access to OpenGL funtionality.</param>
         /// <param name="vertexData">The vertex data to send to the GPU.</param>
-        public VertexBuffer(T[] vertexData)
+        public VertexBuffer(T[] vertexData, int totalTextureSlots)
         {
             if (vertexData is null)
                 throw new ArgumentNullException(nameof(vertexData), "The param must not be null");
 
+            _totalTextureSlots = totalTextureSlots;
             ID = GL.GenBuffer();
 
             AllocateVertexBufferMemory(vertexData);
@@ -70,6 +72,11 @@ namespace OpenTKTutorial
         }
 
 
+        /// <summary>
+        /// Updates the tint color on the GPU for the given texture slot.
+        /// </summary>
+        /// <param name="textureSlot">The texture slot to apply the color to.</param>
+        /// <param name="tintColor">The color to apply.</param>
         public void UpdateTintColor(int textureSlot, Color tintColor)
         {
             var totalVertexBytes = VertexDataAnalyzer.GetTotalBytesForStruct(typeof(VertexData));
@@ -133,9 +140,9 @@ namespace OpenTKTutorial
         /// <summary>
         /// Allocates the required amount of GPU memory to hold the vertex buffer data.
         /// </summary>
-        /// <param name="data">The data to upload.</param>
+        /// <param name="vertexData">The data to upload.</param>
         [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "<Pending>")]
-        private void AllocateVertexBufferMemory(T[] data)
+        private void AllocateVertexBufferMemory(T[] vertexData)
         {
             /*TODO: 
              * To do this, you use the GL call below like this:
@@ -152,13 +159,10 @@ namespace OpenTKTutorial
             //how many texture slots the GPU can handle
 
             //2 quads of data. which is 8 vertices
-            var size = VertexDataAnalyzer.GetTotalBytesForStruct(data[0].GetType()) * data.Length;
+            var totalQuadBytes = VertexDataAnalyzer.GetTotalBytesForStruct(vertexData[0].GetType()) * vertexData.Length;
 
-            //new way
-            //GL.BufferData(BufferTarget.ArrayBuffer, size, IntPtr.Zero, BufferUsageHint.DynamicDraw);
+            GL.BufferData(BufferTarget.ArrayBuffer, _totalTextureSlots * totalQuadBytes, vertexData, BufferUsageHint.DynamicDraw);
 
-            //old way
-            GL.BufferData(BufferTarget.ArrayBuffer, data.Length * (sizeof(float) * 10), data, BufferUsageHint.DynamicDraw);
             Unbind();
         }
         #endregion
