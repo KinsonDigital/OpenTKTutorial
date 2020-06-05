@@ -8,6 +8,9 @@ using NETColor = System.Drawing.Color;
 using System.ComponentModel;
 using System;
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 
 namespace OpenTKTutorial
 {
@@ -124,7 +127,10 @@ namespace OpenTKTutorial
 
             base.OnUpdateFrame(args);
         }
-         
+
+
+        private List<double> _perfResults = new List<double>();
+        private Stopwatch _timer = new Stopwatch();
 
         protected override void OnRenderFrame(FrameEventArgs args)
         {
@@ -133,7 +139,21 @@ namespace OpenTKTutorial
 
             GL.Clear(ClearBufferMask.ColorBufferBit);
 
+            _timer.Start();
+
             RenderNEW();
+
+            _timer.Stop();
+
+            _perfResults.Add(_timer.Elapsed.TotalMilliseconds);
+
+            if (_perfResults.Count >= 1000)
+            {
+                var averageResult = _perfResults.Average();
+                Debugger.Break();
+            }
+
+            _timer.Reset();
 
             SwapBuffers();
 
