@@ -6,6 +6,8 @@ using System.IO;
 using System.Reflection;
 using NETColor = System.Drawing.Color;
 using System.ComponentModel;
+using System;
+using System.Runtime.InteropServices;
 
 namespace OpenTKTutorial
 {
@@ -30,7 +32,11 @@ namespace OpenTKTutorial
         public Game(GameWindowSettings gameWindowSettings, NativeWindowSettings nativeWindowSettings)
             : base(gameWindowSettings, nativeWindowSettings)
         {
-            var totalBytes = VertexDataAnalyzer.GetTotalBytesForStruct(typeof(VertexData));
+            string name = "Hello World";
+
+            GL.Enable(EnableCap.DebugOutput);
+            GL.Enable(EnableCap.DebugOutputSynchronous);
+            GL.DebugMessageCallback(DebugCallback, Marshal.StringToHGlobalAnsi(name));
 
             _contentDir = $@"{_appPathDir}Content\";
             _graphicsContent = $@"{_contentDir}Graphics\";
@@ -55,6 +61,25 @@ namespace OpenTKTutorial
             };
         }
         #endregion
+
+        private void DebugCallback(DebugSource src, DebugType type, int id, DebugSeverity severity, int length, IntPtr message, IntPtr userParam)
+        {
+            var errorMessage = Marshal.PtrToStringAnsi(message);
+
+            errorMessage += errorMessage;
+            errorMessage += $"\n\tSrc: {src}";
+            errorMessage += $"\n\tType: {type}";
+            errorMessage += $"\n\tID: {id}";
+            errorMessage += $"\n\tSeverity: {severity}";
+            errorMessage += $"\n\tLength: {length}";
+            errorMessage += $"\n\tUser Param: {Marshal.PtrToStringAnsi(userParam)}";
+
+            if (severity != DebugSeverity.DebugSeverityNotification)
+            {
+                throw new Exception(errorMessage);
+            }
+        }
+
 
 
         #region Protected Methods
