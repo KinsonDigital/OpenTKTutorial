@@ -133,8 +133,6 @@ namespace OpenTKTutorial
 
             GL.Clear(ClearBufferMask.ColorBufferBit);
 
-
-            //RenderOLD();
             RenderNEW();
 
             SwapBuffers();

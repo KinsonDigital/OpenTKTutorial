@@ -146,14 +146,6 @@ namespace OpenTKTutorial
         [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "<Pending>")]
         private void AllocateVertexBufferMemory(T[] vertexData)
         {
-            /*TODO: 
-             * To do this, you use the GL call below like this:
-             *      GL.BufferData(BufferTarget.ArrayBuffer, <total-size-in-bites-here>, null, BufferUsageHint.DynamicDraw);
-             *      
-             * This would have to using this GL call below only a single time for allocating the data on the GPU
-             * that is enough memory for the total number of quads that matches the total number of texture slots
-             * supported.
-             */
             Bind();
 
             //NOTE: For right now, hard code enough memory to have 2 quads worth of data.

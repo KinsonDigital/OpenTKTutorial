@@ -27,12 +27,9 @@ namespace OpenTKTutorial
         #region Constructors
         public Renderer(int renderSurfaceWidth, int renderSurfaceHeight)
         {
-            var maxVertexStageTextureSlots = -1;
-            var maxFragmentStageTextureSlots = -1;
-
             //Get the total number of available texture slots for the vertex and fragment shaders
-            GL.GetInteger(GetPName.MaxVertexTextureImageUnits, out maxVertexStageTextureSlots);
-            GL.GetInteger(GetPName.MaxTextureImageUnits, out maxFragmentStageTextureSlots);
+            GL.GetInteger(GetPName.MaxVertexTextureImageUnits, out int maxVertexStageTextureSlots);
+            GL.GetInteger(GetPName.MaxTextureImageUnits, out int maxFragmentStageTextureSlots);
 
             _totalTextureSlots = maxVertexStageTextureSlots < maxFragmentStageTextureSlots
                 ? maxVertexStageTextureSlots
@@ -80,39 +77,12 @@ namespace OpenTKTutorial
         {
             texture.Bind(Shader.ProgramId);
 
-            var error = GL.GetError();
-
-            /*
-                Vertex = new Vector3(-1, 1, 0),//Top Left
-                TextureCoord = new Vector2(0, 1),
-                TextureIndex = textureSlot
-            
-                Vertex = new Vector3(1, 1, 0),//Top Right
-                TextureCoord = new Vector2(1, 1),
-                TextureIndex = textureSlot
-            
-                Vertex = new Vector3(1, -1, 0),//Bottom Right - 12
-                TextureCoord = new Vector2(1, 0),
-                TextureIndex = textureSlot
-                 
-                Vertex = new Vector3(-1, -1, 0),//Bottom Left - 18
-                TextureCoord = new Vector2(0, 0), - 21
-                TextureIndex = textureSlot - 23
-             */
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBuffer.ID);
-
 
             _vertexBuffer.UpdateTintColor(texture.TextureSlot, texture.TintColor);
 
             _vertexArray.Bind();
 
-            error = GL.GetError();
-
-            //Update the list of textures
-            //NOTE: Eventually this will not be needed once the transform data in in the vertex buffer.
-            //This is needed so the End() method has the latest data for the transforms uniform GPU data.
-            //Once vertex buffer is setup for transforms, there wont be a need for transform uniforms
-            //anymore.
             if (_textures.ContainsKey(texture.TextureSlot))
             {
                 //Just update the texture
@@ -135,14 +105,6 @@ namespace OpenTKTutorial
             foreach (var kvp in _textures)
             {
                 var texture = _textures[kvp.Key];
-
-                //Update color in GPU
-                //UpdateGPUColorData(kvp.Key, texture.TintColor);
-
-                //Update transform in GPU
-                //TODO: This can be removed, updating of the transformation data will eventually be in the vertex buffer
-                //Once i do this, i will have to change the vertex shader to pull the transform from an attribute instead
-                //of the transform unniform array. I will have to setup attrib pointer layouts for this
                 UpdateGPUTransform(kvp.Key,
                     texture.X,
                     texture.Y,
@@ -214,78 +176,11 @@ namespace OpenTKTutorial
             result.AddRange(quad2.GetVertices());
 
             _vertexBufferData = result.ToArray();
-            return;
-
-            _vertexBufferData = new[]
-            {
-                new VertexData()
-                {
-                    Vertex = new Vector3(-1, 1, 0),//Top Left
-                    TextureCoord = new Vector2(0, 1),
-                    TextureIndex = 0
-                },
-                new VertexData()
-                {
-                    Vertex = new Vector3(1, 1, 0),//Top Right
-                    TextureCoord = new Vector2(1, 1),
-                    TextureIndex = 0
-                },
-                new VertexData()
-                {
-                    Vertex = new Vector3(1, -1, 0),//Bottom Right
-                    TextureCoord = new Vector2(1, 0),
-                    TextureIndex = 0
-                },
-                new VertexData()
-                {
-                    Vertex = new Vector3(-1, -1, 0),//Bottom Left
-                    TextureCoord = new Vector2(0, 0),
-                    TextureIndex = 0
-                },
-
-                //Quad 2
-                new VertexData()
-                {
-                    Vertex = new Vector3(-1, 1, 0),
-                    TextureCoord = new Vector2(0, 1),
-                    TextureIndex = 1
-                },
-                new VertexData()
-                {
-                    Vertex = new Vector3(1, 1, 0),
-                    TextureCoord = new Vector2(1, 1),
-                    TextureIndex = 1
-                },
-                new VertexData()
-                {
-                    Vertex = new Vector3(1, -1, 0),
-                    TextureCoord = new Vector2(1, 0),
-                    TextureIndex = 1
-                },
-                new VertexData()
-                {
-                    Vertex = new Vector3(-1, -1, 0),
-                    TextureCoord = new Vector2(0, 0),
-                    TextureIndex = 1
-                }
-            };
         }
 
 
         private void UpdateGPUTransform(int textureIndex, float x, float y, int width, int height, float size, float angle)
         {
-            /*TODO: Need to think about possibly adding the transformation data into the
-                vertex buffer.  To find out which way is the best, we are going to need to
-                do some perf testing to see if using uniforms or vertex buffers are the
-                best performance vs easier to use to do this.
-
-                The idea here is that instead of using vertex data that holds the vertices,
-                and the uniform array for holding the matrices for every single quad,
-                we could just update the vertices themselves for that "section" of data
-                for all of the quads before we perform our quad.
-
-            */
-
             //Create and send the transformation data to the GPU
             var transMatrix = BuildTransformationMatrix(x,
                 y,

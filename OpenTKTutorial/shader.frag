@@ -19,5 +19,5 @@ void main ()
 {
 	int index = int(v_TextureIndex);
 
-	o_OutputColor = texture(textures[index], v_TexCoord) * v_TintClr;//vec4(0, 0, 0, 255);
+	o_OutputColor = texture(textures[index], v_TexCoord) * v_TintClr;
 }

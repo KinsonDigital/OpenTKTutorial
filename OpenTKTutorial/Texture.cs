@@ -106,7 +106,6 @@ namespace OpenTKTutorial
             GL.Uniform1(texturesLocation, slotNumber);
 
             _boundTextures.Add(ID);
-            //_usedSlots.Add(_textureSlot);
         }
 
 
@@ -121,7 +120,6 @@ namespace OpenTKTutorial
             GL.BindTexture(TextureTarget.Texture2D, 0);
             _boundTextures.Clear();
             _usedSlots.Remove(_textureSlot);
-            //_textureSlot = TextureUnit.Texture0;
         }
 
 
