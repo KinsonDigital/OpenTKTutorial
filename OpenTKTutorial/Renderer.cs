@@ -51,7 +51,7 @@ namespace OpenTKTutorial
 
             InitBufferData();
 
-            _vertexBuffer = new VertexBuffer<VertexData>(_vertexBufferData, 1);
+            _vertexBuffer = new VertexBuffer<VertexData>(_vertexBufferData, 2);
 
             _indexBuffer = new IndexBuffer(new uint[]
             {
@@ -211,7 +211,7 @@ namespace OpenTKTutorial
 
             result.AddRange(quad1.GetVertices());
 
-            //result.AddRange(quad2.GetVertices());
+            result.AddRange(quad2.GetVertices());
 
             _vertexBufferData = result.ToArray();
             return;

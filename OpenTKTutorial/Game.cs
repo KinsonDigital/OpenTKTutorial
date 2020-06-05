@@ -122,7 +122,7 @@ namespace OpenTKTutorial
         {
             _renderer.Begin();
             _renderer.Render(_backgroundTexture);
-            //_renderer.Render(_linkTexture);
+            _renderer.Render(_linkTexture);
             _renderer.End();
         }
 
