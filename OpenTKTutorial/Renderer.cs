@@ -57,6 +57,7 @@ namespace OpenTKTutorial
             });
 
             _vertexArray = new VertexArray<VertexData>(_vertexBuffer, _indexBuffer);
+            _vertexArray.Bind();
         }
         #endregion
 
@@ -80,8 +81,6 @@ namespace OpenTKTutorial
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBuffer.ID);
 
             _vertexBuffer.UpdateTintColor(texture.TextureSlot, texture.TintColor);
-
-            _vertexArray.Bind();
 
             if (_textures.ContainsKey(texture.TextureSlot))
             {
@@ -116,8 +115,8 @@ namespace OpenTKTutorial
 
             GL.DrawElements(PrimitiveType.Triangles, 12, DrawElementsType.UnsignedInt, IntPtr.Zero);
 
-            foreach (var kvp in _textures)
-                _textures[kvp.Key].Unbind();
+            //foreach (var kvp in _textures)
+            //    _textures[kvp.Key].Unbind();
 
             _hasBegun = false;
         }
