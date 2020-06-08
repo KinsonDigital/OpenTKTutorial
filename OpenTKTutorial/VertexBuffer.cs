@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
@@ -79,28 +79,26 @@ namespace OpenTKTutorial
         /// <param name="tintColor">The color to apply.</param>
         public void UpdateTintColor(int textureSlot, Color tintColor)
         {
-            var totalVertexBytes = VertexDataAnalyzer.GetTotalBytesForStruct(typeof(VertexData));
             var quadByteStart = textureSlot == 0
                 ? 0
-                : totalVertexBytes * 4;
-            var tintColorByteStart = VertexDataAnalyzer.GetVertexSubDataOffset(typeof(VertexData), nameof(VertexData.TintColor));
+                : _totalSingleVertexBytes * 4;
 
             var glTintColor = tintColor.ToGLColor();
 
             //Vert 1
-            var offset = quadByteStart + tintColorByteStart;
+            var offset = quadByteStart + _tintColorByteStart;
             GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(offset), 4 * sizeof(float), ref glTintColor);
 
             //Vert 2
-            offset = quadByteStart + (totalVertexBytes * 1) + tintColorByteStart;
+            offset = quadByteStart + (_totalSingleVertexBytes * 1) + _tintColorByteStart;
             GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(offset), 4 * sizeof(float), ref glTintColor);
 
             //Vert 3
-            offset = quadByteStart + (totalVertexBytes * 2) + tintColorByteStart;
+            offset = quadByteStart + (_totalSingleVertexBytes * 2) + _tintColorByteStart;
             GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(offset), 4 * sizeof(float), ref glTintColor);
 
             //Vert 4
-            offset = quadByteStart + (totalVertexBytes * 3) + tintColorByteStart;
+            offset = quadByteStart + (_totalSingleVertexBytes * 3) + _tintColorByteStart;
             GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(offset), 4 * sizeof(float), ref glTintColor);
         }
 
