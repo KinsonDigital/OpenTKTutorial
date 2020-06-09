@@ -23,7 +23,9 @@ namespace OpenTKTutorial
         private readonly string _appPathDir = $@"{Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)}\";
         private readonly string _contentDir;
         private readonly string _graphicsContent;
-        private Texture _linkTexture;
+        private Texture _redLink;
+        private Texture _greenLink;
+        private Texture _blueLink;
         private Texture _backgroundTexture;
         private Renderer _renderer;
         private bool _isShuttingDown;
@@ -50,18 +52,32 @@ namespace OpenTKTutorial
             _backgroundTexture = new Texture($"{_graphicsContent}dungeon.png", _renderer.Shader.ProgramId)
             {
                 X = Size.X / 2,
-                Y = Size.Y / 2,
-                TextureSlot = 0
+                Y = Size.Y / 2
+            };
+            
+            _redLink = new Texture($"{_graphicsContent}Link.png", _renderer.Shader.ProgramId, "redlink")
+            {
+                X = Size.X / 2 - 100,
+                Y = Size.Y / 2 - 100,
+                Angle = 0,
+                TintColor = NETColor.FromArgb(255, 255, 0, 0)
             };
 
-            _linkTexture = new Texture($"{_graphicsContent}Link.png", _renderer.Shader.ProgramId)
-            {
-                X = Size.X / 2,
-                Y = Size.Y / 2,
-                Angle = 0,
-                TintColor = NETColor.FromArgb(255, 0, 0, 255),
-                TextureSlot = 1
-            };
+            //_greenLink = new Texture($"{_graphicsContent}Link.png", _renderer.Shader.ProgramId, "greenlink")
+            //{
+            //    X = Size.X / 2,
+            //    Y = Size.Y / 2,
+            //    Angle = 0,
+            //    TintColor = NETColor.FromArgb(255, 0, 255, 0)
+            //};
+
+            //_blueLink = new Texture($"{_graphicsContent}Link.png", _renderer.Shader.ProgramId, "bluelink")
+            //{
+            //    X = (Size.X / 2) + 100,
+            //    Y = (Size.Y / 2) + 100,
+            //    Angle = 0,
+            //    TintColor = NETColor.FromArgb(255, 0, 0, 255)
+            //};
         }
         #endregion
 
@@ -141,7 +157,7 @@ namespace OpenTKTutorial
 
             _timer.Start();
 
-            RenderNEW();
+            Render();
 
             _timer.Stop();
 
@@ -161,11 +177,22 @@ namespace OpenTKTutorial
         }
 
 
-        private void RenderNEW()
+        private void Render()
         {
             _renderer.Begin();
-            _renderer.Render(_backgroundTexture);
-            _renderer.Render(_linkTexture);
+
+            if (!(_backgroundTexture is null))
+                _renderer.Render(_backgroundTexture);
+
+            if (!(_redLink is null))
+                _renderer.Render(_redLink);
+
+            if (!(_greenLink is null))
+                _renderer.Render(_greenLink);
+
+            if (!(_blueLink is null))
+                _renderer.Render(_blueLink);
+
             _renderer.End();
         }
 
@@ -181,8 +208,11 @@ namespace OpenTKTutorial
 
         protected override void OnClosing(CancelEventArgs e)
         {
-            _linkTexture.Dispose();
-            _backgroundTexture.Dispose();
+            _redLink?.Dispose();
+            _greenLink?.Dispose();
+            _blueLink?.Dispose();
+
+            _backgroundTexture?.Dispose();
             _renderer.Dispose();
             base.OnClosing(e);
         }

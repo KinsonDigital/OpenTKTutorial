@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using OpenToolkit.Graphics.OpenGL4;
 
 namespace OpenTKTutorial
@@ -15,6 +16,7 @@ namespace OpenTKTutorial
         private readonly static List<int> _boundIDNumbers = new List<int>();
         private int _id;
         private bool _disposedValue = false;
+        private readonly GPU _gpu = GPU.Instance;
         #endregion
 
 
@@ -22,26 +24,16 @@ namespace OpenTKTutorial
         /// <summary>
         /// Creates a new instance of <see cref="IndexBuffer"/>.
         /// </summary>
-        /// <param name="data">The index buffer data.</param>
-        public IndexBuffer(uint[] data)
+        public IndexBuffer()
         {
-            if (data is null)
-                throw new ArgumentNullException(nameof(data), "The param must not be null");
-
-            Count = data.Length;
             _id = GL.GenBuffer();
 
-            UploadDataToGPU(data);
+            UploadDataToGPU();
         }
         #endregion
 
 
         #region Props
-        /// <summary>
-        /// The total number of indexes in the buffer.
-        /// </summary>
-        public int Count { get; private set; }
-
         /// <summary>
         /// The ID of the <see cref="IndexBuffer"/>.
         /// </summary>
@@ -91,14 +83,47 @@ namespace OpenTKTutorial
 
         #region Private Methods
         /// <summary>
-        /// Uploads the given <paramref name="data"/> to the GPU.
+        /// Uploads the index buffer data to the GPU.
         /// </summary>
-        /// <param name="data">The data to upload.</param>
-        private void UploadDataToGPU(uint[] data)
+        private void UploadDataToGPU()
         {
+            var indexBufferData = CreateIndexBufferData();
+
             Bind();
-            GL.BufferData(BufferTarget.ElementArrayBuffer, data.Length * sizeof(uint), data, BufferUsageHint.DynamicDraw);
+
+            GL.BufferData(BufferTarget.ElementArrayBuffer, indexBufferData.Length * sizeof(uint), indexBufferData, BufferUsageHint.DynamicDraw);
+
             Unbind();
+        }
+
+
+        private uint[] CreateIndexBufferData()
+        {
+            /*Index Buffer Data Pattern
+                0,  1,  3,  1,  2,  3,  //Quad 1
+                4,  5,  7,  5,  6,  7,  //Quad 2
+                8,  9,  11, 9,  10, 11, //Quad 3
+                12, 13, 15, 13, 14, 15  //Quad 4
+             */
+            var result = new List<uint>();
+
+            for (uint i = 0; i < _gpu.TotalTextureSlots; i++)
+            {
+                var maxIndex = result.Count <= 0 ? 0 : result.Max() + 1;
+
+                result.AddRange(new uint[]
+                {
+                    maxIndex,
+                    maxIndex + 1,
+                    maxIndex + 3,
+                    maxIndex + 1,
+                    maxIndex + 2,
+                    maxIndex + 3
+                });
+            }
+
+
+            return result.ToArray();
         }
         #endregion
 

@@ -8,7 +8,7 @@ layout(location = 3) in float aTextureIndex;
 
 //Uniforms are vars that can dynamically take in data
 //from the CPU side at will
-layout(location = 4) uniform mat4 u_Transforms[2];
+layout(location = 4) uniform mat4 u_Transforms[2];//$TOTAL_TEXTURE_SLOTS
 
 
 //These are vars that send data out and can be

@@ -2,9 +2,6 @@ using OpenToolkit.Graphics.OpenGL4;
 using OpenToolkit.Mathematics;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace OpenTKTutorial
 {
@@ -14,27 +11,23 @@ namespace OpenTKTutorial
         private readonly int _renderSurfaceWidth;
         private readonly int _renderSurfaceHeight;
         private VertexData[] _vertexBufferData;
-        private VertexBuffer<VertexData> _vertexBuffer;
-        private IndexBuffer _indexBuffer;
+        private readonly VertexBuffer<VertexData> _vertexBuffer;
+        private readonly IndexBuffer _indexBuffer;
         private VertexArray<VertexData> _vertexArray;
         private bool _disposedValue = false;
+        private const int ELEMENTS_PER_QUAD = 6;
         private bool _hasBegun;
-        private int _totalTextureSlots = -1;
-        private Dictionary<int, Texture> _textures = new Dictionary<int, Texture>();
+        private int _currentBatch = 0;
+        private readonly Dictionary<int, int> _texturesToRender = new Dictionary<int, int>();
+        private readonly Dictionary<int, int> _transformLocations = new Dictionary<int, int>();
+        private readonly List<Batch> _batchPool = new List<Batch>();
+        private readonly GPU _gpu = GPU.Instance;//SINGLETON
         #endregion
 
 
         #region Constructors
         public Renderer(int renderSurfaceWidth, int renderSurfaceHeight)
         {
-            //Get the total number of available texture slots for the vertex and fragment shaders
-            GL.GetInteger(GetPName.MaxVertexTextureImageUnits, out int maxVertexStageTextureSlots);
-            GL.GetInteger(GetPName.MaxTextureImageUnits, out int maxFragmentStageTextureSlots);
-
-            _totalTextureSlots = maxVertexStageTextureSlots < maxFragmentStageTextureSlots
-                ? maxVertexStageTextureSlots
-                : maxFragmentStageTextureSlots;
-
             Shader = new ShaderProgram("shader.vert", "shader.frag");
 
             _renderSurfaceWidth = renderSurfaceWidth;
@@ -46,18 +39,25 @@ namespace OpenTKTutorial
 
             Shader.UseProgram();
 
-            InitBufferData();
+            _vertexBufferData = CreateVertexBufferData();
 
-            _vertexBuffer = new VertexBuffer<VertexData>(_vertexBufferData, 2);
+            _vertexBuffer = new VertexBuffer<VertexData>(_vertexBufferData);
 
-            _indexBuffer = new IndexBuffer(new uint[]
-            {
-                0, 1, 3, 1, 2, 3, //Quad 1
-                4, 5, 7, 5, 6, 7  //Quad 2
-            });
+            _indexBuffer = new IndexBuffer();
 
             _vertexArray = new VertexArray<VertexData>(_vertexBuffer, _indexBuffer);
             _vertexArray.Bind();
+
+            //Must have at least 1 batch
+            _batchPool.Add(new Batch());
+
+
+            for (int i = 0; i < _gpu.TotalTextureSlots; i++)
+            {
+                var slotTransformLocation = GL.GetUniformLocation(Shader.ProgramId, $"u_Transforms[{i}]");
+
+                _transformLocations.Add(i, slotTransformLocation);
+            }
         }
         #endregion
 
@@ -76,48 +76,43 @@ namespace OpenTKTutorial
 
         public void Render(Texture texture)
         {
-            texture.Bind(Shader.ProgramId);
+            texture.Bind();
 
-            GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBuffer.ID);
+            _texturesToRender.Add(texture.ID, texture.TextureSlot);
 
-            _vertexBuffer.UpdateTintColor(texture.TextureSlot, texture.TintColor);
-
-            if (_textures.ContainsKey(texture.TextureSlot))
-            {
-                //Just update the texture
-                _textures[texture.TextureSlot] = texture;
-            }
-            else
-            {
-                //Add the texture
-                _textures.Add(texture.TextureSlot, texture);
-            }
+            UpdateBatchData(texture);
         }
 
 
         public void End()
         {
+            //TODO: This will update the data and render each batch one batch at a time
             if (!_hasBegun)
                 throw new Exception("Must call begin first");
 
-
-            foreach (var kvp in _textures)
+            //Update all of the data on the GPU
+            foreach (var batch in _batchPool)
             {
-                var texture = _textures[kvp.Key];
-                UpdateGPUTransform(kvp.Key,
-                    texture.X,
-                    texture.Y,
-                    texture.Width,
-                    texture.Height,
-                    texture.Size,
-                    texture.Angle);
+                foreach (var textureKVP in _texturesToRender)
+                {
+                    var textureSlot = textureKVP.Value;
+                    var textureData = batch.Data[textureSlot];
+
+                    _vertexBuffer.UpdateTintColor(textureSlot, textureData.TintColor);
+                    UpdateGPUTransform(textureSlot,
+                        textureData.X,
+                        textureData.Y,
+                        textureData.Width,
+                        textureData.Height,
+                        textureData.Size,
+                        textureData.Angle);
+                }
             }
 
-            GL.DrawElements(PrimitiveType.Triangles, 12, DrawElementsType.UnsignedInt, IntPtr.Zero);
+            var totalElements = ELEMENTS_PER_QUAD * _gpu.TotalTextureSlots;
+            GL.DrawElements(PrimitiveType.Triangles, totalElements, DrawElementsType.UnsignedInt, IntPtr.Zero);
 
-            //foreach (var kvp in _textures)
-            //    _textures[kvp.Key].Unbind();
-
+            _texturesToRender.Clear();
             _hasBegun = false;
         }
 
@@ -139,46 +134,44 @@ namespace OpenTKTutorial
                 {
                     Vertex = new Vector3(-1, 1, 0),//Top Left
                     TextureCoord = new Vector2(0, 1),
-                    TextureIndex = textureSlot
+                    TextureSlot = textureSlot
                 },
                 Vertex2 = new VertexData()
                 {
                     Vertex = new Vector3(1, 1, 0),//Top Right
                     TextureCoord = new Vector2(1, 1),
-                    TextureIndex = textureSlot
+                    TextureSlot = textureSlot
                 },
                 Vertex3 = new VertexData()
                 {
                     Vertex = new Vector3(1, -1, 0),//Bottom Right
                     TextureCoord = new Vector2(1, 0),
-                    TextureIndex = textureSlot
+                    TextureSlot = textureSlot
                 },
                 Vertex4 = new VertexData()
                 {
                     Vertex = new Vector3(-1, -1, 0),//Bottom Left
                     TextureCoord = new Vector2(0, 0),
-                    TextureIndex = textureSlot
+                    TextureSlot = textureSlot
                 }
             };
         }
 
 
-        private void InitBufferData()
+        private VertexData[] CreateVertexBufferData()
         {
-            var quad1 = CreateQuad(0);
-            var quad2 = CreateQuad(1);
-
             var result = new List<VertexData>();
 
-            result.AddRange(quad1.GetVertices());
+            for (int i = 0; i < _gpu.TotalTextureSlots; i++)
+            {
+                result.AddRange(CreateQuad(i).GetVertices());
+            }
 
-            result.AddRange(quad2.GetVertices());
-
-            _vertexBufferData = result.ToArray();
+            return result.ToArray();
         }
 
 
-        private void UpdateGPUTransform(int textureIndex, float x, float y, int width, int height, float size, float angle)
+        private void UpdateGPUTransform(int textureSlot, float x, float y, int width, int height, float size, float angle)
         {
             //Create and send the transformation data to the GPU
             var transMatrix = BuildTransformationMatrix(x,
@@ -188,9 +181,7 @@ namespace OpenTKTutorial
                 size,
                 angle);
 
-            //TODO: Hard code location to improve performance
-            var transDataLocation = GL.GetUniformLocation(Shader.ProgramId, "u_Transforms");
-            GL.UniformMatrix4(transDataLocation + textureIndex, true, ref transMatrix);
+            GL.UniformMatrix4(_transformLocations[textureSlot], true, ref transMatrix);
         }
 
 
@@ -227,6 +218,19 @@ namespace OpenTKTutorial
 
 
             return rotation * scaleMatrix * positionMatrix;
+        }
+
+
+        private void UpdateBatchData(Texture texture)
+        {
+            _batchPool[_currentBatch].SetTextureSlot(texture.TextureSlot);
+            _batchPool[_currentBatch].SetX(texture.TextureSlot, texture.X);
+            _batchPool[_currentBatch].SetY(texture.TextureSlot, texture.Y);
+            _batchPool[_currentBatch].SetWidth(texture.TextureSlot, texture.Width);
+            _batchPool[_currentBatch].SetHeight(texture.TextureSlot, texture.Height);
+            _batchPool[_currentBatch].SetSize(texture.TextureSlot, texture.Size);
+            _batchPool[_currentBatch].SetAngle(texture.TextureSlot, texture.Angle);
+            _batchPool[_currentBatch].SetTintColor(texture.TextureSlot, texture.TintColor.ToGLColor());
         }
         #endregion
 

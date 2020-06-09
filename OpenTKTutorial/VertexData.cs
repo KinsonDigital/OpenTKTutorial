@@ -12,6 +12,6 @@ namespace OpenTKTutorial
 
         public Vector4 TintColor;//Location 2 | aTintColor
 
-        public float TextureIndex;//Location 3 | aTextureIndex 
+        public float TextureSlot;//Location 3 | aTextureIndex 
     }
 }

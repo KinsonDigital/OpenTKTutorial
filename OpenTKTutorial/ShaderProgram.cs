@@ -1,10 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
 using System.Text;
 using OpenToolkit.Graphics.OpenGL4;
-using OpenToolkit.Mathematics;
 
 namespace OpenTKTutorial
 {
@@ -16,6 +14,7 @@ namespace OpenTKTutorial
         #region Private Fields
         private readonly Dictionary<string, int> _uniformLocations = new Dictionary<string, int>();
         private bool _disposedValue;
+        private readonly GPU _gpu = GPU.Instance;
         #endregion
 
 
@@ -228,15 +227,55 @@ namespace OpenTKTutorial
         private string LoadShaderData(string shaderFilePath)
         {
             //Load the source code from the shader files
-            var result = string.Empty;
+            var result = new StringBuilder();
 
             using (var reader = new StreamReader(shaderFilePath, Encoding.UTF8))
             {
-                result = reader.ReadToEnd();
+                var currentLine = string.Empty;
+
+                while(!reader.EndOfStream)
+                {
+                    currentLine = reader.ReadLine();
+
+                    if (NeedsReplacement(currentLine))
+                    {
+                        if (IsTransformsLine(currentLine))
+                        {
+                            currentLine = $"layout(location = 4) uniform mat4 u_Transforms[{_gpu.TotalTextureSlots}];";
+                        }
+                        else if (IsTexturesLine(currentLine))
+                        {
+                            currentLine = $"uniform sampler2D textures[{_gpu.TotalTextureSlots}];";
+                        }
+                    }
+
+                    result.AppendLine(currentLine);
+                }
             }
 
 
-            return result;
+            return result.ToString();
+        }
+
+
+        private static bool NeedsReplacement(string codeLine)
+        {
+            var sections = codeLine.Split($"//");
+
+
+            return sections.Length >= 2 && sections[1].Contains("$TOTAL_TEXTURE_SLOTS");
+        }
+
+
+        private bool IsTransformsLine(string codeLine)
+        {
+            return codeLine.Contains("layout(location = 4) uniform mat4 u_Transforms");
+        }
+
+
+        private bool IsTexturesLine(string codeLine)
+        {
+            return codeLine.Contains("uniform sampler2D textures");
         }
         #endregion
     }

@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.IO;
 using OpenToolkit.Graphics.OpenGL4;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -14,19 +14,24 @@ namespace OpenTKTutorial
         private static readonly List<int> _boundTextures = new List<int>();
         private bool _disposedValue = false;
         private float _angle;
-        private static readonly List<TextureUnit> _usedSlots = new List<TextureUnit>();
-        private TextureUnit _textureSlot;
+        private GPU _gpu = GPU.Instance;
+
 
         #region Constructors
-        public Texture(string texturePath, int shaderProgramId)
+        public Texture(string texturePath, int shaderProgramID, string name = "")
         {
-            _textureSlot = texturePath.Contains("dungeon") ? TextureUnit.Texture0 : TextureUnit.Texture1;
+            TextureSlot = _gpu.GetFreeSlot();
 
             ID = GL.GenTexture();
-            
-            Bind(shaderProgramId);
+
+            Bind();
 
             LoadTextureData(texturePath);
+
+            GL.ObjectLabel(ObjectLabelIdentifier.Texture, ID, -1, name);
+
+            var texturesLocation = GL.GetUniformLocation(shaderProgramID, $"textures[{TextureSlot}]");
+            GL.Uniform1(texturesLocation, TextureSlot);
 
             Unbind();
         }
@@ -66,7 +71,7 @@ namespace OpenTKTutorial
 
         public NETColor TintColor { get; set; } = NETColor.White;
 
-        public int TextureSlot { get; set; }
+        public int TextureSlot { get; private set; }
         #endregion
 
 
@@ -74,7 +79,7 @@ namespace OpenTKTutorial
         /// <summary>
         /// Bind the texture for performing operations on it.
         /// </summary>
-        public void Bind(int shaderProgramID)
+        public void Bind()
         {
             if (_boundTextures.Contains(ID))
                 return;
@@ -93,17 +98,8 @@ namespace OpenTKTutorial
 
             TODO: Cache the "textures" location for improved performance.
             */
-            GL.ActiveTexture(_textureSlot);
+            GL.ActiveTexture(TextureUnit.Texture0 + TextureSlot);
             GL.BindTexture(TextureTarget.Texture2D, ID);
-
-            var texturesLocation = GL.GetUniformLocation(shaderProgramID, "textures");
-            var slotNumber = _textureSlot == TextureUnit.Texture0 ? 0 : 1;
-
-            texturesLocation += slotNumber;
-
-            //Set the texture sampler for this texture that the sampler will be using
-            //in the fragment shader
-            GL.Uniform1(texturesLocation, slotNumber);
 
             _boundTextures.Add(ID);
         }
@@ -119,14 +115,10 @@ namespace OpenTKTutorial
 
             GL.BindTexture(TextureTarget.Texture2D, 0);
             _boundTextures.Clear();
-            _usedSlots.Remove(_textureSlot);
         }
 
 
-        public void Dispose()
-        {
-            Dispose(true);
-        }
+        public void Dispose() => Dispose(true);
         #endregion
 
 
@@ -182,6 +174,7 @@ namespace OpenTKTutorial
                 pixels.Add(p.A);
             }
 
+            GL.ObjectLabel(ObjectLabelIdentifier.Texture, ID, -1, Path.GetFileName(texturePath));
 
             //Set the min and mag filters to linear
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);

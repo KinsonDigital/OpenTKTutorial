@@ -1,8 +1,8 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Drawing;
 using OpenToolkit.Graphics.OpenGL4;
+using OpenToolkit.Mathematics;
 
 namespace OpenTKTutorial
 {
@@ -14,7 +14,10 @@ namespace OpenTKTutorial
         #region Private Fields
         private static readonly List<int> _boundBuffers = new List<int>();
         private bool _disposedValue = false;
-        private int _totalTextureSlots = 0;
+        private readonly GPU _gpu = GPU.Instance;
+        private QuadData _quadData;
+        private int _totalSingleVertexBytes;
+        private int _totalQuadBytes;
         #endregion
 
 
@@ -24,15 +27,44 @@ namespace OpenTKTutorial
         /// </summary>
         /// <param name="gl">Provides access to OpenGL funtionality.</param>
         /// <param name="vertexData">The vertex data to send to the GPU.</param>
-        public VertexBuffer(T[] vertexData, int totalTextureSlots)
+        public VertexBuffer(T[] vertexData)
         {
             if (vertexData is null)
                 throw new ArgumentNullException(nameof(vertexData), "The param must not be null");
 
-            _totalTextureSlots = totalTextureSlots;
             ID = GL.GenBuffer();
 
+            GL.BindBuffer(BufferTarget.ArrayBuffer, ID);
+            GL.ObjectLabel(ObjectLabelIdentifier.Buffer, ID, -1, "VertexBuffer");
+
             AllocateVertexBufferMemory(vertexData);
+
+            _totalSingleVertexBytes = VertexDataAnalyzer.GetTotalBytesForStruct(typeof(VertexData));
+            _totalQuadBytes = _totalSingleVertexBytes * 4;
+
+            _quadData = new QuadData()
+            {
+                Vertex1 = new VertexData()
+                {
+                    Vertex = new Vector3(-1, 1, 0),//Top Left
+                    TextureCoord = new Vector2(0, 1),
+                },
+                Vertex2 = new VertexData()
+                {
+                    Vertex = new Vector3(1, 1, 0),//Top Right
+                    TextureCoord = new Vector2(1, 1),
+                },
+                Vertex3 = new VertexData()
+                {
+                    Vertex = new Vector3(1, -1, 0),//Bottom Right
+                    TextureCoord = new Vector2(1, 0),
+                },
+                Vertex4 = new VertexData()
+                {
+                    Vertex = new Vector3(-1, -1, 0),//Bottom Left
+                    TextureCoord = new Vector2(0, 0),
+                }
+            };
         }
         #endregion
 
@@ -77,29 +109,22 @@ namespace OpenTKTutorial
         /// </summary>
         /// <param name="textureSlot">The texture slot to apply the color to.</param>
         /// <param name="tintColor">The color to apply.</param>
-        public void UpdateTintColor(int textureSlot, Color tintColor)
+        public void UpdateTintColor(int textureSlot, Vector4 tintColor)
         {
-            var quadByteStart = textureSlot == 0
-                ? 0
-                : _totalSingleVertexBytes * 4;
+            var quadByteStart = _totalQuadBytes * textureSlot;
 
-            var glTintColor = tintColor.ToGLColor();
+            _quadData.Vertex1.TextureSlot = textureSlot;
+            _quadData.Vertex2.TextureSlot = textureSlot;
+            _quadData.Vertex3.TextureSlot = textureSlot;
+            _quadData.Vertex4.TextureSlot = textureSlot;
 
-            //Vert 1
-            var offset = quadByteStart + _tintColorByteStart;
-            GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(offset), 4 * sizeof(float), ref glTintColor);
+            _quadData.Vertex1.TintColor = tintColor;
+            _quadData.Vertex2.TintColor = tintColor;
+            _quadData.Vertex3.TintColor = tintColor;
+            _quadData.Vertex4.TintColor = tintColor;
 
-            //Vert 2
-            offset = quadByteStart + (_totalSingleVertexBytes * 1) + _tintColorByteStart;
-            GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(offset), 4 * sizeof(float), ref glTintColor);
 
-            //Vert 3
-            offset = quadByteStart + (_totalSingleVertexBytes * 2) + _tintColorByteStart;
-            GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(offset), 4 * sizeof(float), ref glTintColor);
-
-            //Vert 4
-            offset = quadByteStart + (_totalSingleVertexBytes * 3) + _tintColorByteStart;
-            GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(offset), 4 * sizeof(float), ref glTintColor);
+            GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(quadByteStart), _totalQuadBytes, ref _quadData);
         }
 
 
@@ -113,7 +138,7 @@ namespace OpenTKTutorial
             GC.SuppressFinalize(this);
         }
         #endregion
-
+        
 
         #region Protected Methods
         /// <summary>
@@ -146,14 +171,11 @@ namespace OpenTKTutorial
         {
             Bind();
 
-            //NOTE: For right now, hard code enough memory to have 2 quads worth of data.
-            //The idea is that eventually this will be dynamic in the renderer depending on
-            //how many texture slots the GPU can handle
-
             //2 quads of data. which is 8 vertices
-            var totalQuadBytes = VertexDataAnalyzer.GetTotalBytesForStruct(vertexData[0].GetType()) * vertexData.Length;
+            var bytesPerVertex = VertexDataAnalyzer.GetTotalBytesForStruct(vertexData[0].GetType());
+            var bytesPerQuad = bytesPerVertex * 4;
 
-            GL.BufferData(BufferTarget.ArrayBuffer, _totalTextureSlots * totalQuadBytes, vertexData, BufferUsageHint.DynamicDraw);
+            GL.BufferData(BufferTarget.ArrayBuffer, bytesPerQuad * _gpu.TotalTextureSlots, vertexData, BufferUsageHint.DynamicDraw);
 
             Unbind();
         }

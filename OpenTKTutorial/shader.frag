@@ -12,7 +12,7 @@ in float v_TextureIndex;
 out vec4 o_OutputColor;
 
 
-uniform sampler2D textures[2];
+uniform sampler2D textures[3];//$TOTAL_TEXTURE_SLOTS
 
 
 void main ()

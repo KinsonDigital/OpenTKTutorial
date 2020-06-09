@@ -11,7 +11,6 @@ namespace OpenTKTutorial
             var nativeWinSettings = new NativeWindowSettings();
             nativeWinSettings.Size = new Vector2i(1020, 800);
 
-
             var game = new Game(gameWinSettings, nativeWinSettings);
 
             game.Run();
