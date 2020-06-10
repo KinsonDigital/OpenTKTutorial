@@ -18,20 +18,33 @@ namespace OpenTKTutorial
 
 
         #region Constructors
-        public Texture(string texturePath, int shaderProgramID, string name = "")
+        public Texture(string texturePath, int shaderProgramID)
         {
-            TextureSlot = _gpu.GetFreeSlot();
-
             ID = GL.GenTexture();
 
             Bind();
 
-            LoadTextureData(texturePath);
+            var (pixelData, width, height) = LoadImageData(texturePath);
 
-            GL.ObjectLabel(ObjectLabelIdentifier.Texture, ID, -1, name);
+            UploadDataToGPU(pixelData, width, height, Path.GetFileName(texturePath));
 
-            var texturesLocation = GL.GetUniformLocation(shaderProgramID, $"textures[{TextureSlot}]");
-            GL.Uniform1(texturesLocation, TextureSlot);
+            Width = width;
+            Height = height;
+
+            Unbind();
+        }
+
+
+        public Texture(byte[] pixelData, int width, int height, string name)
+        {
+            ID = GL.GenTexture();
+
+            Bind();
+
+            Width = width;
+            Height = height;
+
+            UploadDataToGPU(pixelData, width, height, name);
 
             Unbind();
         }
@@ -70,8 +83,6 @@ namespace OpenTKTutorial
         }
 
         public NETColor TintColor { get; set; } = NETColor.White;
-
-        public int TextureSlot { get; private set; }
         #endregion
 
 
@@ -98,8 +109,8 @@ namespace OpenTKTutorial
 
             TODO: Cache the "textures" location for improved performance.
             */
-            GL.ActiveTexture(TextureUnit.Texture0 + TextureSlot);
-            GL.BindTexture(TextureTarget.Texture2D, ID);
+            //GL.ActiveTexture(TextureUnit.Texture0 + TextureSlot);
+            //GL.BindTexture(TextureTarget.Texture2D, ID);
 
             _boundTextures.Add(ID);
         }
@@ -142,7 +153,7 @@ namespace OpenTKTutorial
 
 
         #region Private Methods
-        private void LoadTextureData(string texturePath)
+        private (byte[] pixelData, int width, int height) LoadImageData(string texturePath)
         {
             //Load the image
             var image = (Image<Rgba32>)Image.Load(texturePath);
@@ -174,7 +185,15 @@ namespace OpenTKTutorial
                 pixels.Add(p.A);
             }
 
-            GL.ObjectLabel(ObjectLabelIdentifier.Texture, ID, -1, Path.GetFileName(texturePath));
+
+            return (pixels.ToArray(), image.Width, image.Height);
+        }
+
+
+        private void UploadDataToGPU(byte[] pixelData, int width, int height, string name)
+        {
+            GL.BindTexture(TextureTarget.Texture2D, ID);
+            GL.ObjectLabel(ObjectLabelIdentifier.Texture, ID, -1, Path.GetFileName(name));
 
             //Set the min and mag filters to linear
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
@@ -185,7 +204,7 @@ namespace OpenTKTutorial
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
 
             //Load the texture data to the GPU for the currently active texture slot
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, image.Width, image.Height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, pixels.ToArray());
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, pixelData);
         }
         #endregion
     }

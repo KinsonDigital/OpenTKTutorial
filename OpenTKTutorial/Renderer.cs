@@ -1,7 +1,10 @@
 using OpenToolkit.Graphics.OpenGL4;
 using OpenToolkit.Mathematics;
 using System;
+using System.Linq;
 using System.Collections.Generic;
+using System.Security.Cryptography;
+using System.Runtime.CompilerServices;
 
 namespace OpenTKTutorial
 {
@@ -19,7 +22,6 @@ namespace OpenTKTutorial
         private bool _hasBegun;
         private int _currentBatch = 0;
         private readonly Dictionary<int, int> _texturesToRender = new Dictionary<int, int>();
-        private readonly Dictionary<int, int> _transformLocations = new Dictionary<int, int>();
         private readonly List<Batch> _batchPool = new List<Batch>();
         private readonly GPU _gpu = GPU.Instance;//SINGLETON
         #endregion
@@ -28,7 +30,7 @@ namespace OpenTKTutorial
         #region Constructors
         public Renderer(int renderSurfaceWidth, int renderSurfaceHeight)
         {
-            Shader = new ShaderProgram("shader.vert", "shader.frag");
+            Shader = _gpu.GetShaderProgram();
 
             _renderSurfaceWidth = renderSurfaceWidth;
             _renderSurfaceHeight = renderSurfaceHeight;
@@ -50,14 +52,6 @@ namespace OpenTKTutorial
 
             //Must have at least 1 batch
             _batchPool.Add(new Batch());
-
-
-            for (int i = 0; i < _gpu.TotalTextureSlots; i++)
-            {
-                var slotTransformLocation = GL.GetUniformLocation(Shader.ProgramId, $"u_Transforms[{i}]");
-
-                _transformLocations.Add(i, slotTransformLocation);
-            }
         }
         #endregion
 
@@ -76,12 +70,20 @@ namespace OpenTKTutorial
 
         public void Render(Texture texture)
         {
-            texture.Bind();
+            //texture.Bind();//TODO: This will move to the end() method
 
-            _texturesToRender.Add(texture.ID, texture.TextureSlot);
+            var batchIndex = _batchPool.IndexOf(b => b.HasSpace);
 
-            UpdateBatchData(texture);
+            //If no batches have any room, add a new batch to the batch pool
+            if (batchIndex == -1)
+            {
+                _batchPool.Add(new Batch());
+                batchIndex = _batchPool.Count - 1;
+            }
+
+            _batchPool[batchIndex].AddTextureData(texture);
         }
+        
 
 
         public void End()
@@ -93,20 +95,13 @@ namespace OpenTKTutorial
             //Update all of the data on the GPU
             foreach (var batch in _batchPool)
             {
-                foreach (var textureKVP in _texturesToRender)
-                {
-                    var textureSlot = textureKVP.Value;
-                    var textureData = batch.Data[textureSlot];
+                if (batch.IsEmpty)
+                    continue;
 
-                    _vertexBuffer.UpdateTintColor(textureSlot, textureData.TintColor);
-                    UpdateGPUTransform(textureSlot,
-                        textureData.X,
-                        textureData.Y,
-                        textureData.Width,
-                        textureData.Height,
-                        textureData.Size,
-                        textureData.Angle);
-                }
+                batch.BindBatch();
+
+                batch.UpdateTintColors();
+                batch.UpdateTransforms();
             }
 
             var totalElements = ELEMENTS_PER_QUAD * _gpu.TotalTextureSlots;
@@ -171,20 +166,6 @@ namespace OpenTKTutorial
         }
 
 
-        private void UpdateGPUTransform(int textureSlot, float x, float y, int width, int height, float size, float angle)
-        {
-            //Create and send the transformation data to the GPU
-            var transMatrix = BuildTransformationMatrix(x,
-                y,
-                width,
-                height,
-                size,
-                angle);
-
-            GL.UniformMatrix4(_transformLocations[textureSlot], true, ref transMatrix);
-        }
-
-
         /// <summary>
         /// Builds a complete transformation matrix using the given params.
         /// </summary>
@@ -223,14 +204,14 @@ namespace OpenTKTutorial
 
         private void UpdateBatchData(Texture texture)
         {
-            _batchPool[_currentBatch].SetTextureSlot(texture.TextureSlot);
-            _batchPool[_currentBatch].SetX(texture.TextureSlot, texture.X);
-            _batchPool[_currentBatch].SetY(texture.TextureSlot, texture.Y);
-            _batchPool[_currentBatch].SetWidth(texture.TextureSlot, texture.Width);
-            _batchPool[_currentBatch].SetHeight(texture.TextureSlot, texture.Height);
-            _batchPool[_currentBatch].SetSize(texture.TextureSlot, texture.Size);
-            _batchPool[_currentBatch].SetAngle(texture.TextureSlot, texture.Angle);
-            _batchPool[_currentBatch].SetTintColor(texture.TextureSlot, texture.TintColor.ToGLColor());
+            //_batchPool[_currentBatch].SetTextureSlot(texture.TextureSlot);
+            //_batchPool[_currentBatch].SetX(texture.TextureSlot, texture.X);
+            //_batchPool[_currentBatch].SetY(texture.TextureSlot, texture.Y);
+            //_batchPool[_currentBatch].SetWidth(texture.TextureSlot, texture.Width);
+            //_batchPool[_currentBatch].SetHeight(texture.TextureSlot, texture.Height);
+            //_batchPool[_currentBatch].SetSize(texture.TextureSlot, texture.Size);
+            //_batchPool[_currentBatch].SetAngle(texture.TextureSlot, texture.Angle);
+            //_batchPool[_currentBatch].SetTintColor(texture.TextureSlot, texture.TintColor.ToGLColor());
         }
         #endregion
 

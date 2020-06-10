@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using OpenToolkit.Mathematics;
 
 namespace OpenTKTutorial
 {
@@ -20,9 +21,6 @@ namespace OpenTKTutorial
     public class Game : GameWindow
     {
         #region Private Fields
-        private readonly string _appPathDir = $@"{Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)}\";
-        private readonly string _contentDir;
-        private readonly string _graphicsContent;
         private Texture _redLink;
         private Texture _greenLink;
         private Texture _blueLink;
@@ -30,6 +28,7 @@ namespace OpenTKTutorial
         private Renderer _renderer;
         private bool _isShuttingDown;
         private double _elapsedTime;
+        private Texture[] _textures;
         #endregion
 
 
@@ -39,45 +38,17 @@ namespace OpenTKTutorial
         {
             string name = "Hello World";
 
+            GPU.Instance.ViewPortWidth = nativeWindowSettings.Size.X;
+            GPU.Instance.ViewPortHeight = nativeWindowSettings.Size.Y;
+
             GL.Enable(EnableCap.DebugOutput);
             GL.Enable(EnableCap.DebugOutputSynchronous);
             GL.DebugMessageCallback(DebugCallback, Marshal.StringToHGlobalAnsi(name));
 
-            _contentDir = $@"{_appPathDir}Content\";
-            _graphicsContent = $@"{_contentDir}Graphics\";
-
             _renderer = new Renderer(nativeWindowSettings.Size.X, nativeWindowSettings.Size.Y);
 
-
-            _backgroundTexture = new Texture($"{_graphicsContent}dungeon.png", _renderer.Shader.ProgramId)
-            {
-                X = Size.X / 2,
-                Y = Size.Y / 2
-            };
-            
-            _redLink = new Texture($"{_graphicsContent}Link.png", _renderer.Shader.ProgramId, "redlink")
-            {
-                X = Size.X / 2 - 100,
-                Y = Size.Y / 2 - 100,
-                Angle = 0,
-                TintColor = NETColor.FromArgb(255, 255, 0, 0)
-            };
-
-            //_greenLink = new Texture($"{_graphicsContent}Link.png", _renderer.Shader.ProgramId, "greenlink")
-            //{
-            //    X = Size.X / 2,
-            //    Y = Size.Y / 2,
-            //    Angle = 0,
-            //    TintColor = NETColor.FromArgb(255, 0, 255, 0)
-            //};
-
-            //_blueLink = new Texture($"{_graphicsContent}Link.png", _renderer.Shader.ProgramId, "bluelink")
-            //{
-            //    X = (Size.X / 2) + 100,
-            //    Y = (Size.Y / 2) + 100,
-            //    Angle = 0,
-            //    TintColor = NETColor.FromArgb(255, 0, 0, 255)
-            //};
+            //48 = 1.5 batches = 2 draw calls for batch rendering
+            _textures = TextureFactory.CreateTextures("Link.png", 48);
         }
         #endregion
 
@@ -181,17 +152,10 @@ namespace OpenTKTutorial
         {
             _renderer.Begin();
 
-            if (!(_backgroundTexture is null))
-                _renderer.Render(_backgroundTexture);
-
-            if (!(_redLink is null))
-                _renderer.Render(_redLink);
-
-            if (!(_greenLink is null))
-                _renderer.Render(_greenLink);
-
-            if (!(_blueLink is null))
-                _renderer.Render(_blueLink);
+            foreach (var texture in _textures)
+            {
+                _renderer.Render(texture);
+            }
 
             _renderer.End();
         }

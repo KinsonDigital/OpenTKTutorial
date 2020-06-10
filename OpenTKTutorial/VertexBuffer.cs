@@ -16,8 +16,8 @@ namespace OpenTKTutorial
         private bool _disposedValue = false;
         private readonly GPU _gpu = GPU.Instance;
         private QuadData _quadData;
-        private int _totalSingleVertexBytes;
-        private int _totalQuadBytes;
+        private static int _totalSingleVertexBytes = VertexDataAnalyzer.GetTotalBytesForStruct(typeof(VertexData));
+        private static int _totalQuadBytes = _totalSingleVertexBytes * 4;
         #endregion
 
 
@@ -38,9 +38,6 @@ namespace OpenTKTutorial
             GL.ObjectLabel(ObjectLabelIdentifier.Buffer, ID, -1, "VertexBuffer");
 
             AllocateVertexBufferMemory(vertexData);
-
-            _totalSingleVertexBytes = VertexDataAnalyzer.GetTotalBytesForStruct(typeof(VertexData));
-            _totalQuadBytes = _totalSingleVertexBytes * 4;
 
             _quadData = new QuadData()
             {

@@ -11,6 +11,10 @@ namespace OpenTKTutorial
         private static readonly List<int> _usedSlots = new List<int>();
         private static readonly Lazy<GPU> _gpuSingleton = new Lazy<GPU>(() => new GPU());
 
+        //This dictionary is key(slot) and value(shader location)
+        private static readonly Dictionary<int, int> _transformLocations = new Dictionary<int, int>();
+        private static ShaderProgram _shader;
+
         public static GPU Instance => _gpuSingleton.Value;
 
 
@@ -30,8 +34,34 @@ namespace OpenTKTutorial
         }
 
 
+        public ShaderProgram GetShaderProgram()
+        {
+            if (!(_shader is null))
+                return _shader;
+
+            _shader = new ShaderProgram("shader.vert", "shader.frag");
+
+
+            for (int i = 0; i < TotalTextureSlots; i++)
+            {
+                var slotTransformLocation = GL.GetUniformLocation(_shader.ProgramId, $"u_Transforms[{i}]");
+
+                _transformLocations.Add(i, slotTransformLocation);
+            }
+
+            return _shader;
+        }
+
+
+        public Dictionary<int, int> TransformLocations => _transformLocations;
+
 
         public int TotalTextureSlots { get; private set; }
+
+
+        public int ViewPortWidth { get; set; } = 800;
+
+        public int ViewPortHeight { get; set; } = 600;
 
 
         public int GetFreeSlot()
