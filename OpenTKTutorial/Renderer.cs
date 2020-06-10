@@ -21,7 +21,6 @@ namespace OpenTKTutorial
         private const int ELEMENTS_PER_QUAD = 6;
         private bool _hasBegun;
         private int _currentBatch = 0;
-        private readonly Dictionary<int, int> _texturesToRender = new Dictionary<int, int>();
         private readonly List<Batch> _batchPool = new List<Batch>();
         private readonly GPU _gpu = GPU.Instance;//SINGLETON
         #endregion
@@ -107,7 +106,8 @@ namespace OpenTKTutorial
             var totalElements = ELEMENTS_PER_QUAD * _gpu.TotalTextureSlots;
             GL.DrawElements(PrimitiveType.Triangles, totalElements, DrawElementsType.UnsignedInt, IntPtr.Zero);
 
-            _texturesToRender.Clear();
+            _batchPool.ForEach(b => b.Clear());
+
             _hasBegun = false;
         }
 

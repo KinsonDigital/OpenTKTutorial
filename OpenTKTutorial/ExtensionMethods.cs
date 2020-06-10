@@ -33,7 +33,7 @@ namespace OpenTKTutorial
         }
 
 
-        public static int IndexOf(this List<Batch> batchPool, Predicate<Batch> predicate)
+        public static int IndexOf<T>(this List<T> batchPool, Predicate<T> predicate)
         {
             for (int i = 0; i < batchPool.Count(); i++)
             {

@@ -12,6 +12,7 @@ namespace OpenTKTutorial
         private readonly Dictionary<int, TextureData> _textureData = new Dictionary<int, TextureData>();
         private static int _totalSingleVertexBytes = VertexDataAnalyzer.GetTotalBytesForStruct(typeof(VertexData));
         private static int _totalQuadBytes = _totalSingleVertexBytes * 4;
+        private static readonly Dictionary<int, int> _textureLocations = new Dictionary<int, int>();
         private static QuadData _quadData = new QuadData()
         {
             Vertex1 = new VertexData()
@@ -38,9 +39,17 @@ namespace OpenTKTutorial
 
         public Batch()
         {
-            for (int i = 0; i < _gpu.TotalTextureSlots; i++)
+            for (int slot = 0; slot < _gpu.TotalTextureSlots; slot++)
             {
-                _textureData.Add(i, new TextureData());
+                _textureData.Add(slot, new TextureData());
+            }
+
+            if (_textureLocations.Count <= 0)
+            {
+                for (int slot = 0; slot < _gpu.TotalTextureSlots; slot++)
+                {
+                    _textureLocations.Add(slot, GL.GetUniformLocation(_gpu.GetShaderProgram().ProgramId, $"textures[{slot}]"));
+                }
             }
         }
 
@@ -70,24 +79,17 @@ namespace OpenTKTutorial
                 GL.ActiveTexture(TextureUnit.Texture0 + slot);
                 GL.BindTexture(TextureTarget.Texture2D, _textureData[slot].TextureID);
 
-                var texturesLocation = GL.GetUniformLocation(_gpu.GetShaderProgram().ProgramId, $"textures[{slot}]");
-                GL.Uniform1(texturesLocation, slot);
+                GL.Uniform1(_textureLocations[slot], slot);
             }
         }
 
 
         public void UpdateTintColors()
         {
-            var itemsToUpdate = (from d in _textureData
-                                 where !d.Value.IsEmpty
-                                 select d).ToArray();
-
-            if (itemsToUpdate is null || itemsToUpdate.Length <= 0)
-                return;
-
-            foreach (var item in itemsToUpdate)
+            foreach (var dataItem in _textureData)
             {
-                UpdateTintColor(item.Key, item.Value.TintColor);
+                if (!dataItem.Value.IsEmpty)
+                    UpdateTintColor(dataItem.Key, dataItem.Value.TintColor);
             }
         }
 
@@ -114,6 +116,21 @@ namespace OpenTKTutorial
         }
 
 
+        public void Clear()
+        {
+            var totalFullItems = _textureData.Values.Count(i => !i.IsEmpty);
+
+            var keys = _textureData.Keys.ToArray();
+
+            for (int i = 0; i < keys.Length; i++)
+            {
+                _textureData[keys[i]] = new TextureData();
+            }
+
+            totalFullItems = _textureData.Values.Count(i => !i.IsEmpty);
+        }
+
+
         private void UpdateTintColor(int textureSlot, Vector4 tintColor)
         {
             var quadByteStart = _totalQuadBytes * textureSlot;
@@ -135,17 +152,13 @@ namespace OpenTKTutorial
 
         private int GetFreeSlot()
         {
-            var anyFreeSlots = _textureData.Any(d => d.Value.IsEmpty);
+            var freeSlot = _textureData.Values.ToList().IndexOf(i => i.IsEmpty);
 
-            if (!anyFreeSlots)
+            if (freeSlot == -1)
                 throw new Exception($"Only {_gpu.TotalTextureSlots} available per batch.");
 
-            var freeSlotKeys = (from item in _textureData
-                                where item.Value.IsEmpty
-                                select item.Key).ToArray();
 
-
-            return freeSlotKeys.Length <= 0 ? -1 : freeSlotKeys.Min();
+            return freeSlot;
         }
 
 

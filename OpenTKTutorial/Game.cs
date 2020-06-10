@@ -48,7 +48,7 @@ namespace OpenTKTutorial
             _renderer = new Renderer(nativeWindowSettings.Size.X, nativeWindowSettings.Size.Y);
 
             //48 = 1.5 batches = 2 draw calls for batch rendering
-            _textures = TextureFactory.CreateTextures("Link.png", 48);
+            _textures = TextureFactory.CreateTextures("Link.png", 1864);
         }
         #endregion
 
