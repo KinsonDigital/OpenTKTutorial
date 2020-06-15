@@ -165,6 +165,8 @@ namespace OpenTKTutorial
             if (statusCode != (int)All.True)
             {
                 // We can use `GL.GetProgramInfoLog(program)` to get information about the error.
+
+                var programInfo = GL.GetProgramInfoLog(shaderProgramId);
                 throw new Exception($"Error occurred while linking Program({shaderProgramId})");
             }
         }

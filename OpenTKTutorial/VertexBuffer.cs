@@ -8,7 +8,7 @@ namespace OpenTKTutorial
     /// <summary>
     /// A vertex buffer object used to hold and describe data for a the GLSL shader program.
     /// </summary>
-    public class VertexArrayBuffer<T> : IDisposable where T : struct
+    public class VertexBuffer<T> : IDisposable where T : struct
     {
         #region Private Fields
         private static readonly List<int> _boundBuffers = new List<int>();
@@ -22,7 +22,7 @@ namespace OpenTKTutorial
         /// </summary>
         /// <param name="gl">Provides access to OpenGL funtionality.</param>
         /// <param name="data">The vertex data to send to the GPU.</param>
-        public VertexArrayBuffer(T[] data)
+        public VertexBuffer(T[] data)
         {
             if (data is null)
                 throw new ArgumentNullException(nameof(data), "The param must not be null");
@@ -111,7 +111,7 @@ namespace OpenTKTutorial
         private void UploadDataToGPU(T[] data)
         {
             Bind();
-            GL.BufferData(BufferTarget.ArrayBuffer, data.Length * sizeof(float), data, BufferUsageHint.DynamicDraw);
+            GL.BufferData(BufferTarget.ArrayBuffer, data.Length * (5 * sizeof(float)), data, BufferUsageHint.StaticDraw);
             Unbind();
         }
         #endregion

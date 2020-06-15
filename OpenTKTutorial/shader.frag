@@ -8,14 +8,13 @@ Src: https://stackoverflow.com/questions/746899/how-to-calculate-an-rgb-colour-b
 in vec2 v_TexCoord;
 in vec4 v_TintClr;
 
-
 out vec4 o_OutputColor;
 
 
-uniform sampler2D textureSlot0;
+uniform sampler2D texture0;
 
 
 void main ()
 {
-	o_OutputColor = texture(textureSlot0, v_TexCoord) * v_TintClr;
+	o_OutputColor = texture(texture0, v_TexCoord) * v_TintClr;
 }

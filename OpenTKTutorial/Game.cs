@@ -6,6 +6,11 @@ using System.IO;
 using System.Reflection;
 using NETColor = System.Drawing.Color;
 using System.ComponentModel;
+using System.Runtime.InteropServices;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 
 namespace OpenTKTutorial
 {
@@ -15,14 +20,12 @@ namespace OpenTKTutorial
     public class Game : GameWindow
     {
         #region Private Fields
-        private readonly string _appPathDir = $@"{Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)}\";
-        private readonly string _contentDir;
-        private readonly string _graphicsContent;
         private Texture _linkTexture;
         private Texture _backgroundTexture;
         private Renderer _renderer;
         private bool _isShuttingDown;
         private double _elapsedTime;
+        private Texture[] _textures;
         #endregion
 
 
@@ -30,24 +33,30 @@ namespace OpenTKTutorial
         public Game(GameWindowSettings gameWindowSettings, NativeWindowSettings nativeWindowSettings)
             : base(gameWindowSettings, nativeWindowSettings)
         {
-            _contentDir = $@"{_appPathDir}Content\";
-            _graphicsContent = $@"{_contentDir}Graphics\";
+            string name = "Hello World";
 
-            _backgroundTexture = new Texture($"{_graphicsContent}dungeon.png")
-            {
-                X = Size.X / 2,
-                Y = Size.Y / 2
-            };
-
-            _linkTexture = new Texture($"{_graphicsContent}Link.png")
-            {
-                X = Size.X / 2,
-                Y = Size.Y / 2,
-                Angle = 0,
-                TintColor = NETColor.FromArgb(125, 255, 255, 255)
-            };
+            GL.Enable(EnableCap.DebugOutput);
+            GL.Enable(EnableCap.DebugOutputSynchronous);
+            GL.DebugMessageCallback(DebugCallback, Marshal.StringToHGlobalAnsi(name));
 
             _renderer = new Renderer(nativeWindowSettings.Size.X, nativeWindowSettings.Size.Y);
+
+            //48 = 1.5 batches = 2 draw calls for batch rendering
+            _textures = TextureFactory.CreateTextures("Link.png", 48);
+
+            //_backgroundTexture = new Texture($"{_graphicsContent}dungeon.png")
+            //{
+            //    X = Size.X / 2,
+            //    Y = Size.Y / 2,
+            //};
+
+            //_linkTexture = new Texture($"{_graphicsContent}Link.png")
+            //{
+            //    X = Size.X / 2,
+            //    Y = Size.Y / 2,
+            //    Angle = 0,
+            //    TintColor = NETColor.FromArgb(255, 0, 0, 255),
+            //};
         }
         #endregion
 
@@ -94,7 +103,10 @@ namespace OpenTKTutorial
 
             base.OnUpdateFrame(args);
         }
-         
+
+
+        private List<double> _perfTimes = new List<double>();
+        private Stopwatch _timer = new Stopwatch();
 
         protected override void OnRenderFrame(FrameEventArgs args)
         {
@@ -103,16 +115,35 @@ namespace OpenTKTutorial
 
             GL.Clear(ClearBufferMask.ColorBufferBit);
 
+            _timer.Start();
 
-            _renderer.Render(_backgroundTexture);
-            _renderer.Render(_linkTexture);
+            Render();
 
+            _timer.Stop();
+
+            _perfTimes.Add(_timer.Elapsed.TotalMilliseconds);
+
+            if (_perfTimes.Count >= 1000)
+            {
+                var averageResult = _perfTimes.Average();
+                Debugger.Break();
+            }
+
+            _timer.Reset();
 
             SwapBuffers();
 
             base.OnRenderFrame(args);
         }
 
+
+        private void Render()
+        {
+            foreach (var texture in _textures)
+            {
+                _renderer.Render(texture);
+            }
+        }
 
         protected override void OnResize(ResizeEventArgs e)
         {
@@ -125,8 +156,8 @@ namespace OpenTKTutorial
 
         protected override void OnClosing(CancelEventArgs e)
         {
-            _linkTexture.Dispose();
-            _backgroundTexture.Dispose();
+            _linkTexture?.Dispose();
+            _backgroundTexture?.Dispose();
             _renderer.Dispose();
             base.OnClosing(e);
         }
@@ -138,5 +169,24 @@ namespace OpenTKTutorial
             base.OnUnload();
         }
         #endregion
+
+
+        private void DebugCallback(DebugSource src, DebugType type, int id, DebugSeverity severity, int length, IntPtr message, IntPtr userParam)
+        {
+            var errorMessage = Marshal.PtrToStringAnsi(message);
+
+            errorMessage += errorMessage;
+            errorMessage += $"\n\tSrc: {src}";
+            errorMessage += $"\n\tType: {type}";
+            errorMessage += $"\n\tID: {id}";
+            errorMessage += $"\n\tSeverity: {severity}";
+            errorMessage += $"\n\tLength: {length}";
+            errorMessage += $"\n\tUser Param: {Marshal.PtrToStringAnsi(userParam)}";
+
+            if (severity != DebugSeverity.DebugSeverityNotification)
+            {
+                throw new Exception(errorMessage);
+            }
+        }
     }
 }
