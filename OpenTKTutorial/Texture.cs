@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using OpenToolkit.Graphics.OpenGL4;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -10,19 +11,55 @@ namespace OpenTKTutorial
 {
     public class Texture : IDisposable
     {
-        private static readonly List<int> _boundTextures = new List<int>();
         private bool _disposedValue = false;
         private float _angle;
+        private bool _textureUnit0NotBound = true;
 
 
         #region Constructors
         public Texture(string texturePath)
         {
             ID = GL.GenTexture();
-            
+
+            //NOTE: Some GPU's automatically default to texture unit 0 but
+            //some do not.  This is just in case a GPU does not
+            if (_textureUnit0NotBound)
+            {
+                GL.ActiveTexture(TextureUnit.Texture0);
+                _textureUnit0NotBound = true;
+            }
+
             Bind();
 
-            LoadTextureData(texturePath);
+            var (pixelData, width, height) = LoadImageData(texturePath);
+
+            Width = width;
+            Height = height;
+
+            UploadDataToGPU(pixelData, width, height, Path.GetFileName(texturePath));
+
+            Unbind();
+        }
+
+
+        public Texture(byte[] pixelData, int width, int height, string name)
+        {
+            ID = GL.GenTexture();
+
+            //NOTE: Some GPU's automatically default to texture unit 0 but
+            //some do not.  This is just in case a GPU does not
+            if (_textureUnit0NotBound)
+            {
+                GL.ActiveTexture(TextureUnit.Texture0);
+                _textureUnit0NotBound = true;
+            }
+
+            Bind();
+
+            Width = width;
+            Height = height;
+
+            UploadDataToGPU(pixelData, width, height, name);
 
             Unbind();
         }
@@ -70,11 +107,7 @@ namespace OpenTKTutorial
         /// </summary>
         public void Bind()
         {
-            if (_boundTextures.Contains(ID))
-                return;
-
             GL.BindTexture(TextureTarget.Texture2D, ID);
-            _boundTextures.Add(ID);
         }
 
 
@@ -83,11 +116,7 @@ namespace OpenTKTutorial
         /// </summary>
         public void Unbind()
         {
-            if (!_boundTextures.Contains(ID))
-                return;
-
-            GL.BindTexture(TextureTarget.Texture2D, 0);
-            _boundTextures.Remove(ID);
+            //GL.BindTexture(TextureTarget.Texture2D, 0);
         }
 
 
@@ -118,7 +147,7 @@ namespace OpenTKTutorial
 
 
         #region Private Methods
-        private void LoadTextureData(string texturePath)
+        private (byte[] pixelData, int width, int height) LoadImageData(string texturePath)
         {
             //Load the image
             var image = (Image<Rgba32>)Image.Load(texturePath);
@@ -151,6 +180,14 @@ namespace OpenTKTutorial
             }
 
 
+            return (pixels.ToArray(), image.Width, image.Height);
+        }
+
+
+        private void UploadDataToGPU(byte[] pixelData, int width, int height, string name)
+        {
+            GL.ObjectLabel(ObjectLabelIdentifier.Texture, ID, -1, Path.GetFileName(name));
+
             //Set the min and mag filters to linear
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
@@ -160,7 +197,7 @@ namespace OpenTKTutorial
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
 
             //Load the texture data to the GPU for the currently active texture slot
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, image.Width, image.Height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, pixels.ToArray());
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, pixelData);
         }
         #endregion
     }
