@@ -23,14 +23,18 @@ namespace OpenTKTutorial
         private ShaderProgram _shader;
         private bool _isShuttingDown;
         private double _elapsedTime;
-        private ITexture _textureAtlas;
-        private ITexture _backgroundTexture;
-        private Rectangle[] _subTextures;
         private Renderer _renderer;
         private Vector2 _linkPosition;
-        private List<Vector2> _quadPositions = new List<Vector2>();
+        private readonly Dictionary<int, ITexture> _texturePool = new Dictionary<int, ITexture>();
+        private Entity _backgroundEntity;
+        private readonly List<AtlasEntity> _linkEntities = new List<AtlasEntity>();
+        private readonly int _atlasID;
+        private readonly Dictionary<string, AtlasSubRect> _atlasSubRects;
+        private Entity _linkEntity;
         #endregion
 
+        //TODO: Need to finish the custom batching process including setting the total batch size in the shaders
+        //TODO: Need to add color to the vertex buffer and update its data
 
         #region Constructors
         public Game(GameWindowSettings gameWindowSettings, NativeWindowSettings nativeWindowSettings)
@@ -45,8 +49,18 @@ namespace OpenTKTutorial
             _shader = new ShaderProgram("shader.vert", "shader.frag");
             _renderer = new Renderer(_shader, nativeWindowSettings.Size.X, nativeWindowSettings.Size.Y);
 
-            _textureAtlas = ContentLoader.CreateTexture("main-atlas.png");
-            _backgroundTexture = ContentLoader.CreateTexture("dungeon.png");
+            var backgroundTexture = ContentLoader.CreateTexture("dungeon.png");
+            _texturePool.Add(backgroundTexture.ID, backgroundTexture);
+
+            var mainAtlasTexture = ContentLoader.CreateTexture("main-atlas.png");
+            _texturePool.Add(mainAtlasTexture.ID, mainAtlasTexture);
+
+            _atlasID = mainAtlasTexture.ID;
+
+            //Load the atlas sub rectangle data
+            _atlasSubRects = ContentLoader.LoadAtlasData("atlas-data.json");
+
+            _backgroundEntity = new Entity(backgroundTexture.ID);
 
             _linkPosition = new Vector2(0, 0);
 
@@ -54,10 +68,17 @@ namespace OpenTKTutorial
 
             for (int i = 0; i < 48; i++)
             {
-                var x = random.Next(0, 1020);
-                var y = random.Next(0, 800);
+                var newEntity = new AtlasEntity(mainAtlasTexture.ID, _atlasSubRects["link"]) 
+                {
+                    Position = new Vector2(random.Next(0, 1020), random.Next(0, 800)),
+                    TintColor = Color.FromArgb(
+                        255,
+                        random.Next(0, 255),
+                        random.Next(0, 255),
+                        random.Next(0, 255))
+                };
 
-                _quadPositions.Add(new Vector2(x, y));
+                _linkEntities.Add(newEntity);
             }
         }
         #endregion
@@ -66,7 +87,6 @@ namespace OpenTKTutorial
         #region Protected Methods
         protected override void OnLoad()
         {
-            _subTextures = ContentLoader.LoadAtlasData("atlas-data.json");
         }
 
 
@@ -79,12 +99,12 @@ namespace OpenTKTutorial
                 Close();
 
 
-            //var totalTime = 4000;
+            var totalTime = 4000;
 
-            ////Use easing functions to gradually change texture values
-            //var alphaResult = (int)EasingFunctions.EaseOutBounce(_elapsedTime * 1000, 0, 255, totalTime);
+            //Use easing functions to gradually change texture values
+            var alphaResult = (int)EasingFunctions.EaseOutBounce(_elapsedTime * 1000, 0, 255, totalTime);
 
-            //alphaResult = alphaResult > 255 ? 255 : alphaResult;
+            alphaResult = alphaResult > 255 ? 255 : alphaResult;
 
             //_linkTexture.X = (float)EasingFunctions.EaseOutBounce(_elapsedTime * 1000, 200, 400, totalTime);
 
@@ -97,11 +117,11 @@ namespace OpenTKTutorial
 
             //_linkTexture.Size = (float)EasingFunctions.EaseOutBounce(_elapsedTime * 1000, 0.5f, 0.5f, totalTime);
 
-            ////If the total time for the easing functions
-            ////to finish has expired, reset everything.
-            //_elapsedTime = _elapsedTime * 1000 > totalTime
-            //    ? 0
-            //    : _elapsedTime += args.Time;
+            //If the total time for the easing functions
+            //to finish has expired, reset everything.
+            _elapsedTime = _elapsedTime * 1000 > totalTime
+                ? 0
+                : _elapsedTime += args.Time;
 
             base.OnUpdateFrame(args);
         }
@@ -144,21 +164,23 @@ namespace OpenTKTutorial
         {
             _renderer.Begin();
 
+            var backgroundTexture = _texturePool[_backgroundEntity.TextureID];
+
             _renderer.Render(
-                _backgroundTexture,
-                new Rectangle(0, 0, _backgroundTexture.Width, _backgroundTexture.Height),
-                new Rectangle(0, 0, _backgroundTexture.Width, _backgroundTexture.Height),
+                backgroundTexture,
+                new Rectangle(0, 0, backgroundTexture.Width, backgroundTexture.Height),
+                new Rectangle(0, 0, backgroundTexture.Width, backgroundTexture.Height),
                 1,
                 0,
                 NETColor.White);
 
-            for (int i = 0; i < _subTextures.Length; i++)
+            var atlasTexture = _texturePool[_atlasID];
+
+            for (int i = 0; i < _linkEntities.Count; i++)
             {
-                _linkPosition = _quadPositions[i];
+                var destRect = new Rectangle((int)_linkEntities[i].Position.X, (int)_linkEntities[i].Position.Y, atlasTexture.Width, atlasTexture.Height);
 
-                var destRect = new Rectangle((int)_linkPosition.X, (int)_linkPosition.Y, _textureAtlas.Width, _textureAtlas.Height);
-
-                _renderer.Render(_textureAtlas, _subTextures[i], destRect, 1, 0, NETColor.White);
+                _renderer.Render(atlasTexture, _linkEntities[i].AtlasSubRect.ToRectangle(), destRect, 1, 0, NETColor.White);
             }
 
             _renderer.End();

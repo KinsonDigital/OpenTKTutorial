@@ -34,7 +34,7 @@ namespace OpenTKTutorial
         }
 
 
-        public static Rectangle ToSubTextureRect(this SubTextureRect rect)
+        public static Rectangle ToRectangle(this AtlasSubRect rect)
         {
             return new Rectangle(rect.X, rect.Y, rect.Width, rect.Height);
         }

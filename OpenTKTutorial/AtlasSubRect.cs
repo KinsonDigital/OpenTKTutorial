@@ -1,15 +1,18 @@
 ﻿namespace OpenTKTutorial
 {
-    public struct SubTextureRect
+    public struct AtlasSubRect
     {
-        public SubTextureRect(int x, int y, int width, int height)
+        public AtlasSubRect(string name, int x, int y, int width, int height)
         {
+            Name = name;
             X = x;
             Y = y;
             Width = width;
             Height = height;
         }
 
+
+        public string Name { get; set; }
 
         public int X { get; set; }
 

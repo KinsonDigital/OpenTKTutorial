@@ -47,16 +47,26 @@ namespace OpenTKTutorial
         }
 
 
-        public static NETRectangle[] LoadAtlasData(string fileName)
+        public static Dictionary<string, AtlasSubRect> LoadAtlasData(string fileName)
         {
+            var result = new Dictionary<string, AtlasSubRect>();
+
             var contentDir = $@"{_appPathDir}Content\";
             var graphicsContent = $@"{contentDir}Graphics\";
 
 
             var rawData = File.ReadAllText($"{graphicsContent}{fileName}");
 
+            var rectItems = JsonSerializer.Deserialize<AtlasSubRect[]>(rawData);
 
-            return JsonSerializer.Deserialize<NETRectangle[]>(rawData);
+
+            foreach (var item in rectItems)
+            {
+                result.Add(item.Name, item);
+            }
+
+
+            return result;
         }
 
 

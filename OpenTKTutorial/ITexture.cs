@@ -7,6 +7,8 @@ namespace OpenTKTutorial
         #region Props
         int ID { get; }
 
+        string Name { get;  }
+
         int Width { get; }
 
         int Height { get; }

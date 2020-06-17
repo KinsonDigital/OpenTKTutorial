@@ -17,6 +17,8 @@ namespace OpenTKTutorial
             Width = width;
             Height = height;
 
+            Name = Path.GetFileNameWithoutExtension(name);
+
             UploadDataToGPU(pixelData, width, height, name);
 
             Unbind();
@@ -24,6 +26,7 @@ namespace OpenTKTutorial
 
         public int ID { get; protected set; }
 
+        public string Name { get; private set; }
 
         public int Width { get; protected set; }
 
