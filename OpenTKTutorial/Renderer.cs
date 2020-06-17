@@ -14,9 +14,10 @@ namespace OpenTKTutorial
         private readonly int _renderSurfaceWidth;
         private readonly int _renderSurfaceHeight;
         private VertexData[] _vertexBufferData;
-        private readonly GPUBuffer _gpuBuffer;
+        private readonly GPUBuffer<VertexData> _gpuBuffer;
         private bool _disposedValue = false;
         private readonly int _transDataLocation;
+        private readonly int _tintClrLocation;
         private readonly Dictionary<int, SpriteBatchItem> _batchItems = new Dictionary<int, SpriteBatchItem>();
         private bool _hasBegun;
         private int _maxBatchSize = 48;
@@ -43,11 +44,14 @@ namespace OpenTKTutorial
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
             GL.ClearColor(0.2f, 0.3f, 0.3f, 1.0f);//TODO: Allow changing of this
 
+            GL.ActiveTexture(TextureUnit.Texture0);
+
             Shader.UseProgram();
 
-            _gpuBuffer = new GPUBuffer(_maxBatchSize);
+            _gpuBuffer = new GPUBuffer<VertexData>(_maxBatchSize);
 
             _transDataLocation = GL.GetUniformLocation(Shader.ProgramId, "uTransform");
+            _tintClrLocation = GL.GetUniformLocation(Shader.ProgramId, "u_TintColor");
         }
         #endregion
 
@@ -108,15 +112,6 @@ namespace OpenTKTutorial
 
         private void RenderBatch()
         {
-            //DEBUGGING ONLY
-            var nonEmptyItems = _batchItems.Where(i => !i.Value.IsEmpty).ToArray();
-            var sameIDForEntireBatch = (from i in _batchItems
-                                        select i.Value.TextureID).ToArray().Distinct().Count() == 1;
-
-            //TODO: This can probably just be set one time at the creation of the renderer.
-            //Only if using the first texture slot for everything
-            GL.ActiveTexture(TextureUnit.Texture0);
-
             var batchAmountToRender = 0;
 
             for (int i = 0; i < _batchItems.Values.Count; i++)
@@ -143,6 +138,8 @@ namespace OpenTKTutorial
                 batchAmountToRender += 1;
             }
 
+            //Only render the amount of elements for the amount of batch items to render.
+            //6 = the number of vertices/quad and each batch is a quad. batchAmontToRender is the total quads to render
             GL.DrawElements(PrimitiveType.Triangles, 6 * batchAmountToRender, DrawElementsType.UnsignedInt, IntPtr.Zero);
 
             EmptyBatchItems();
@@ -171,9 +168,7 @@ namespace OpenTKTutorial
         {
             var tintClrData = tintClr.ToGLColor();
 
-            //TODO: Work on caching this for performance
-            var tintClrLocation = GL.GetUniformLocation(Shader.ProgramId, "u_TintColor");
-            GL.Uniform4(tintClrLocation, tintClrData);
+            GL.Uniform4(_tintClrLocation, tintClrData);
         }
 
 

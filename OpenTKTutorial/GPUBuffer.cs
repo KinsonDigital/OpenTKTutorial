@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -8,12 +8,13 @@ using OpenToolkit.Mathematics;
 
 namespace OpenTKTutorial
 {
-    public class GPUBuffer
+    public class GPUBuffer<T> where T : struct
     {
         private int _vertexBufferID = -1;
         private int _indexBufferID;
         private int _vertexArrayID;
-
+        private int _totalVertexBytes;
+        private readonly int _totalQuadSizeInBytes;
 
         public GPUBuffer(int totalQuads)
         {
@@ -27,7 +28,9 @@ namespace OpenTKTutorial
             BindVertexBuffer();
             BindIndexBuffer();
 
-            SetupAttribPointers(_vertexArrayID, typeof(VertexData));
+            SetupAttribPointers(_vertexArrayID, typeof(T));
+            _totalVertexBytes = VertexDataAnalyzer.GetTotalBytesForStruct(typeof(T));
+            _totalQuadSizeInBytes = _totalVertexBytes * 4;
         }
 
 
@@ -59,12 +62,6 @@ namespace OpenTKTutorial
         #region Public Methods
         public void UpdateQuad(int quadID, Rectangle srcRect, int textureWidth, int textureHeight)
         {
-            //TODO: Condense/improve this to get a perf boost
-
-            //TODO: Cache this value to avoid reflection for perf boost
-            var totalVertexBytes = VertexDataAnalyzer.GetTotalBytesForStruct(typeof(VertexData));
-            var totalQuadSizeInBytes = totalVertexBytes * 4;
-
             var quadData = CreateQuad();
 
             UpdateTextureCoordinates(ref quadData, srcRect, textureWidth, textureHeight);
@@ -74,8 +71,8 @@ namespace OpenTKTutorial
             quadData.Vertex3.TransformIndex = quadID;
             quadData.Vertex4.TransformIndex = quadID;
 
-            var offset = totalQuadSizeInBytes * quadID;
-            GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(offset), totalQuadSizeInBytes, ref quadData);
+            var offset = _totalQuadSizeInBytes * quadID;
+            GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(offset), _totalQuadSizeInBytes, ref quadData);
         }
         #endregion
 
