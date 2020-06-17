@@ -1,16 +1,20 @@
-﻿using OpenToolkit.Windowing.Common;
+using OpenToolkit.Windowing.Common;
 using OpenToolkit.Windowing.Desktop;
 using OpenToolkit.Windowing.Common.Input;
 using OpenToolkit.Graphics.OpenGL4;
 using System.IO;
 using System.Reflection;
-using NETColor = System.Drawing.Color;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using SixLabors.ImageSharp;
+using NETColor = System.Drawing.Color;
+using NETRectangle = System.Drawing.Rectangle;
+using System.Text.Json;
+using OpenToolkit.Mathematics;
 
 namespace OpenTKTutorial
 {
@@ -20,12 +24,15 @@ namespace OpenTKTutorial
     public class Game : GameWindow
     {
         #region Private Fields
-        private Texture _linkTexture;
-        private Texture _backgroundTexture;
-        private Renderer _renderer;
+        private ShaderProgram _shader;
         private bool _isShuttingDown;
         private double _elapsedTime;
-        private Texture[] _textures;
+        private ITexture _textureAtlas;
+        private ITexture _backgroundTexture;
+        private SubTextureRect[] _subTextures;
+        private Renderer _renderer;
+        private Vector2 _linkPosition;
+        private List<Vector2> _quadPositions = new List<Vector2>();
         #endregion
 
 
@@ -39,24 +46,23 @@ namespace OpenTKTutorial
             GL.Enable(EnableCap.DebugOutputSynchronous);
             GL.DebugMessageCallback(DebugCallback, Marshal.StringToHGlobalAnsi(name));
 
-            _renderer = new Renderer(nativeWindowSettings.Size.X, nativeWindowSettings.Size.Y);
+            _shader = new ShaderProgram("shader.vert", "shader.frag");
+            _renderer = new Renderer(_shader, nativeWindowSettings.Size.X, nativeWindowSettings.Size.Y);
 
-            //48 = 1.5 batches = 2 draw calls for batch rendering
-            _textures = TextureFactory.CreateTextures("Link.png", 48);
+            _textureAtlas = ContentLoader.CreateTexture("main-atlas.png");
+            _backgroundTexture = ContentLoader.CreateTexture("dungeon.png");
 
-            //_backgroundTexture = new Texture($"{_graphicsContent}dungeon.png")
-            //{
-            //    X = Size.X / 2,
-            //    Y = Size.Y / 2,
-            //};
+            _linkPosition = new Vector2(0, 0);
 
-            //_linkTexture = new Texture($"{_graphicsContent}Link.png")
-            //{
-            //    X = Size.X / 2,
-            //    Y = Size.Y / 2,
-            //    Angle = 0,
-            //    TintColor = NETColor.FromArgb(255, 0, 0, 255),
-            //};
+            var random = new Random();
+
+            for (int i = 0; i < 48; i++)
+            {
+                var x = random.Next(0, 1020);
+                var y = random.Next(0, 800);
+
+                _quadPositions.Add(new Vector2(x, y));
+            }
         }
         #endregion
 
@@ -64,7 +70,7 @@ namespace OpenTKTutorial
         #region Protected Methods
         protected override void OnLoad()
         {
-            
+            _subTextures = ContentLoader.LoadAtlasData("atlas-data.json");
         }
 
 
@@ -108,6 +114,7 @@ namespace OpenTKTutorial
         private List<double> _perfTimes = new List<double>();
         private Stopwatch _timer = new Stopwatch();
 
+
         protected override void OnRenderFrame(FrameEventArgs args)
         {
             if (_isShuttingDown)
@@ -139,11 +146,28 @@ namespace OpenTKTutorial
 
         private void Render()
         {
-            foreach (var texture in _textures)
+            _renderer.Begin();
+
+            _renderer.Render(
+                _backgroundTexture,
+                new NETRectangle(0, 0, _backgroundTexture.Width, _backgroundTexture.Height),
+                new NETRectangle(0, 0, _backgroundTexture.Width, _backgroundTexture.Height),
+                1,
+                0,
+                NETColor.White);
+
+            for (int i = 0; i < _subTextures.Length; i++)
             {
-                _renderer.Render(texture);
+                _linkPosition = _quadPositions[i];
+
+                var destRect = new NETRectangle((int)_linkPosition.X, (int)_linkPosition.Y, _textureAtlas.Width, _textureAtlas.Height);
+
+                _renderer.Render(_textureAtlas, _subTextures[i].ToSubTextureRect(), destRect, 1, 0, NETColor.White);
             }
+
+            _renderer.End();
         }
+
 
         protected override void OnResize(ResizeEventArgs e)
         {
@@ -156,9 +180,6 @@ namespace OpenTKTutorial
 
         protected override void OnClosing(CancelEventArgs e)
         {
-            _linkTexture?.Dispose();
-            _backgroundTexture?.Dispose();
-            _renderer.Dispose();
             base.OnClosing(e);
         }
 

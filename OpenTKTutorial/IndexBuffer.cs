@@ -28,7 +28,6 @@ namespace OpenTKTutorial
             if (data is null)
                 throw new ArgumentNullException(nameof(data), "The param must not be null");
 
-            Count = data.Length;
             _id = GL.GenBuffer();
 
             UploadDataToGPU(data);
@@ -37,11 +36,6 @@ namespace OpenTKTutorial
 
 
         #region Props
-        /// <summary>
-        /// The total number of indexes in the buffer.
-        /// </summary>
-        public int Count { get; private set; }
-
         /// <summary>
         /// The ID of the <see cref="IndexBuffer"/>.
         /// </summary>

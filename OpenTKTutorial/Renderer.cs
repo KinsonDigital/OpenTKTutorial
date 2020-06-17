@@ -3,39 +3,38 @@ using OpenToolkit.Mathematics;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Threading;
 
 namespace OpenTKTutorial
 {
     public class Renderer : IDisposable
     {
-        /* TODO:  Look into these
-         * GL.GetInteger(GetPName.MaxCombinedTextureImageUnits,       out MaxTextureUnitsCombined);
-            GL.GetInteger(GetPName.MaxVertexTextureImageUnits,         out MaxTextureUnitsVertex);
-            GL.GetInteger(GetPName.MaxGeometryTextureImageUnits,       out MaxTextureUnitsGeometry);
-            GL.GetInteger(GetPName.MaxTessControlTextureImageUnits,    out MaxTextureUnitsTessControl);
-            GL.GetInteger(GetPName.MaxTessEvaluationTextureImageUnits, out MaxTextureUnitsTessEval);
-            GL.GetInteger(GetPName.MaxTextureImageUnits,               out MaxTextureUnitsFragment);
-
-        This has to do with finding out what our max texture slots are on the current GPU
-         */
         #region Private Fields
         private readonly int _renderSurfaceWidth;
         private readonly int _renderSurfaceHeight;
         private VertexData[] _vertexBufferData;
-        private VertexBuffer<VertexData> _vertexBuffer;
-        private IndexBuffer _indexBuffer;
-        private VertexArray<VertexData> _vertexArray;
+        private readonly GPUBuffer _gpuBuffer;
         private bool _disposedValue = false;
-        private Dictionary<int, Texture> _textures = new Dictionary<int, Texture>();
         private readonly int _transDataLocation;
+        private readonly Dictionary<int, SpriteBatchItem> _batchItems = new Dictionary<int, SpriteBatchItem>();
+        private bool _hasBegun;
+        private int _maxBatchSize = 48;
+        private int _currentBatchItem = 0;
+        private int _previousTextureID = -1;
+        private int _currentTextureID;
         #endregion
 
 
         #region Constructors
-        public Renderer(int renderSurfaceWidth, int renderSurfaceHeight)
+        public Renderer(ShaderProgram shader, int renderSurfaceWidth, int renderSurfaceHeight)
         {
-            Shader = new ShaderProgram("shader.vert", "shader.frag");
+            for (int i = 0; i < _maxBatchSize; i++)
+            {
+                _batchItems.Add(i, SpriteBatchItem.Empty);
+            }
+
+            Shader = shader;
 
             _renderSurfaceWidth = renderSurfaceWidth;
             _renderSurfaceHeight = renderSurfaceHeight;
@@ -46,19 +45,9 @@ namespace OpenTKTutorial
 
             Shader.UseProgram();
 
-            InitBufferData();
+            _gpuBuffer = new GPUBuffer(_maxBatchSize);
 
-            _vertexBuffer = new VertexBuffer<VertexData>(_vertexBufferData);
-            _indexBuffer = new IndexBuffer(new uint[]
-            {
-                0, 1, 3, 1, 2, 3 //Quad indices
-            });
-
-            _vertexArray = new VertexArray<VertexData>(_vertexBuffer, _indexBuffer);
-            _vertexArray.Bind();
-
-
-            _transDataLocation = GL.GetUniformLocation(Shader.ProgramId, "u_Transform");
+            _transDataLocation = GL.GetUniformLocation(Shader.ProgramId, "uTransform");
         }
         #endregion
 
@@ -69,42 +58,107 @@ namespace OpenTKTutorial
 
 
         #region Public Methods
-        public void Render(Texture texture)
+        public void Begin()
         {
-            try
+            _hasBegun = true;
+        }
+
+
+        public void Render(ITexture texture, Rectangle srcRect, Rectangle destRect, float size, float angle, Color tintColor)
+        {
+            if (!_hasBegun)
+                throw new Exception("Must call begin() first");
+
+            _currentTextureID = texture.ID;
+
+            //Has the textures switched
+            if (texture.ID != _previousTextureID && _previousTextureID != -1)
             {
-                texture.Bind();
-
-                UpdateGPUColorData(texture.TintColor);
-
-                UpdateGPUTransform(texture.X,
-                    texture.Y,
-                    texture.Width,
-                    texture.Height,
-                    texture.Size,
-                    texture.Angle);
-
-                GL.DrawElements(PrimitiveType.Triangles, 8, DrawElementsType.UnsignedInt, IntPtr.Zero);
-
-                texture.Unbind();
+                RenderBatch();
+                _currentBatchItem = 0;
+                _previousTextureID = 0;
             }
-            catch (Exception ex)
+
+            _currentBatchItem = _currentBatchItem >= _maxBatchSize ? 0 : _currentBatchItem;
+
+            var batchItem = _batchItems[_currentBatchItem];
+            batchItem.TextureID = texture.ID;
+            batchItem.SrcRect = srcRect;
+            batchItem.DestRect = destRect;
+            batchItem.Size = size;
+            batchItem.Angle = angle;
+            batchItem.TintColor = tintColor;
+
+            _batchItems[_currentBatchItem] = batchItem;
+
+            _currentBatchItem += 1;
+            _previousTextureID = texture.ID;
+        }
+
+
+        public void End()
+        {
+            //DEBUGGING ONLY
+            RenderBatch();
+            _currentBatchItem = 0;
+            _previousTextureID = 0;
+            _hasBegun = false;
+        }
+
+
+        private void RenderBatch()
+        {
+            //DEBUGGING ONLY
+            var nonEmptyItems = _batchItems.Where(i => !i.Value.IsEmpty).ToArray();
+            var sameIDForEntireBatch = (from i in _batchItems
+                                        select i.Value.TextureID).ToArray().Distinct().Count() == 1;
+
+            //TODO: This can probably just be set one time at the creation of the renderer.
+            //Only if using the first texture slot for everything
+            GL.ActiveTexture(TextureUnit.Texture0);
+
+            var batchAmountToRender = 0;
+
+            for (int i = 0; i < _batchItems.Values.Count; i++)
             {
-                throw;
+                if (_batchItems[i].IsEmpty)
+                    continue;
+
+                GL.BindTexture(TextureTarget.Texture2D, _batchItems[i].TextureID);
+
+                //Add GPU data update
+                UpdateGPUColorData(_batchItems[i].TintColor);
+
+                UpdateGPUTransform(
+                    i,
+                    _batchItems[i].DestRect.X,
+                    _batchItems[i].DestRect.Y,
+                    _batchItems[i].SrcRect.Width,
+                    _batchItems[i].SrcRect.Height,
+                    _batchItems[i].Size,
+                    _batchItems[i].Angle);
+
+                _gpuBuffer.UpdateQuad(i, _batchItems[i].SrcRect, _batchItems[i].DestRect.Width, _batchItems[i].DestRect.Height);
+
+                batchAmountToRender += 1;
+            }
+
+            GL.DrawElements(PrimitiveType.Triangles, 6 * batchAmountToRender, DrawElementsType.UnsignedInt, IntPtr.Zero);
+
+            EmptyBatchItems();
+        }
+
+
+        private void EmptyBatchItems()
+        {
+            for (int i = 0; i < _batchItems.Count; i++)
+            {
+                _batchItems[i] = SpriteBatchItem.Empty;
             }
         }
 
 
-        public void Render(Texture[] textures)
-        {
-            foreach (var texture in textures)
-            {
-                Render(texture);
-            }
-        }
-
-
-       public void Dispose()
+        public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
@@ -113,54 +167,29 @@ namespace OpenTKTutorial
 
 
         #region Private Methods
-        private void InitBufferData()
-        {
-            _vertexBufferData = new[]
-            {
-                new VertexData()
-                {
-                    Vertex = new Vector3(-1, 1, 0),//Top Left
-                    TextureCoord = new Vector2(0, 1)
-                },
-                new VertexData()
-                {
-                    Vertex = new Vector3(1, 1, 0),//Top Right
-                    TextureCoord = new Vector2(1, 1)
-                },
-                new VertexData()
-                {
-                    Vertex = new Vector3(1, -1, 0),//Bottom Right
-                    TextureCoord = new Vector2(1, 0)
-                },
-                new VertexData()
-                {
-                    Vertex = new Vector3(-1, -1, 0),//Bottom Left
-                    TextureCoord = new Vector2(0, 0)
-                }
-            };
-        }
-
-
         private void UpdateGPUColorData(Color tintClr)
         {
             var tintClrData = tintClr.ToGLColor();
 
-            GL.Uniform4(3, tintClrData);
+            //TODO: Work on caching this for performance
+            var tintClrLocation = GL.GetUniformLocation(Shader.ProgramId, "u_TintColor");
+            GL.Uniform4(tintClrLocation, tintClrData);
         }
 
 
-        private void UpdateGPUTransform(float x, float y, int width, int height, float size, float angle)
+        private void UpdateGPUTransform(int quadID, float x, float y, int width, int height, float size, float angle)
         {
             //Create and send the transformation data to the GPU
-            var transMatrix = BuildTransformationMatrix(x,
-                                               y,
-                                               width,
-                                               height,
-                                               size,
-                                               angle);
+            var transMatrix = BuildTransformationMatrix(
+                x,
+                y,
+                width,
+                height,
+                size,
+                angle);
 
             
-            GL.UniformMatrix4(_transDataLocation, true, ref transMatrix);
+            GL.UniformMatrix4(_transDataLocation + quadID, true, ref transMatrix);
         }
 
 
@@ -210,9 +239,9 @@ namespace OpenTKTutorial
             if (disposing)
             {
                 Shader.Dispose();
-                _vertexBuffer.Dispose();
-                _indexBuffer.Dispose();
-                _vertexArray.Dispose();
+                //_vertexBuffer.Dispose();
+                //_indexBuffer.Dispose();
+                //_vertexArray.Dispose();
             }
 
             _disposedValue = true;

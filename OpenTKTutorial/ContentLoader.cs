@@ -6,43 +6,58 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using System;
+using System.Text.Json;
 
 namespace OpenTKTutorial
 {
-    public static class TextureFactory
+    public static class ContentLoader
     {
         private readonly static string _appPathDir = $@"{Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)}\";
-        private static string _contentDir;
-        private static string _graphicsContent;
         private const int WINDOW_WIDTH = 1020;
         private const int WINDOW_HEIGHT = 800;
 
 
-        public static Texture[] CreateTextures(string fileName, uint count)
+        public static ITexture[] CreateTextures(string fileName, uint count)
         {
             var random = new Random();
-            _contentDir = $@"{_appPathDir}Content\";
-            _graphicsContent = $@"{_contentDir}Graphics\";
+            var contentDir = $@"{_appPathDir}Content\";
+            var graphicsContent = $@"{contentDir}Graphics\";
 
 
             var result = new List<Texture>();
 
-            var (pixelData, width, height) = LoadImageData($"{_graphicsContent}{fileName}");
+            var (pixelData, width, height) = LoadImageData($"{graphicsContent}{fileName}");
 
             for (int i = 0; i < count; i++)
             {
-                result.Add(new Texture(pixelData, width, height, $"{Path.GetFileNameWithoutExtension(fileName)}-{i}")
-                {
-                    X = random.Next(0, WINDOW_WIDTH),
-                    Y = random.Next(0, WINDOW_HEIGHT),
-                    TintColor = NETColor.FromArgb(255, 255, 255, 255)
-                });
+                result.Add(new Texture(pixelData, width, height, $"{Path.GetFileNameWithoutExtension(fileName)}-{i}"));
             }
 
 
             return result.ToArray();
         }
 
+
+        public static ITexture CreateTexture(string fileName)
+        {
+            var textures = CreateTextures(fileName, 1);
+
+
+            return textures[0];
+        }
+
+
+        public static SubTextureRect[] LoadAtlasData(string fileName)
+        {
+            var contentDir = $@"{_appPathDir}Content\";
+            var graphicsContent = $@"{contentDir}Graphics\";
+
+
+            var rawData = File.ReadAllText($"{graphicsContent}{fileName}");
+
+
+            return JsonSerializer.Deserialize<SubTextureRect[]>(rawData);
+        }
 
 
         private static (byte[] pixelData, int width, int height) LoadImageData(string texturePath)

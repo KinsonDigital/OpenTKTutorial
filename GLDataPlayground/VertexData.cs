@@ -1,8 +1,10 @@
 ﻿using OpenToolkit.Mathematics;
+using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Xml.Serialization;
+using System.Text;
 
-namespace OpenTKTutorial
+namespace GLDataPlayground
 {
     [StructLayout(LayoutKind.Sequential)]
     public struct VertexData
@@ -11,6 +13,6 @@ namespace OpenTKTutorial
 
         public Vector2 TextureCoord;//Location 1 | aTexCoord
 
-        public float TransformIndex;//Location 2 | aTransformIndex
+        public Matrix4 Transform;//Locations 2,3,4 and 5
     }
 }

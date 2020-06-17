@@ -1,12 +1,12 @@
 ﻿using OpenToolkit.Mathematics;
-using OpenToolkit.Windowing.Desktop;
 using OpenToolkit.Graphics.OpenGL4;
+using System;
+using System.Drawing;
 using System.Collections.Generic;
 using System.Linq;
-using System.Drawing;
-using System;
+using OpenToolkit.Windowing.Desktop;
 
-namespace OpenTKTutorial
+namespace GLDataPlayground
 {
     class Program
     {
@@ -21,7 +21,7 @@ namespace OpenTKTutorial
             nativeWinSettings.Size = new Vector2i(1020, 800);
 
 
-            var game = new Game(gameWinSettings, nativeWinSettings);
+            var game = new MainWindow(gameWinSettings, nativeWinSettings);
 
             game.Run();
 

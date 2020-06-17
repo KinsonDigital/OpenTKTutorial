@@ -1,7 +1,9 @@
 ﻿using OpenToolkit.Mathematics;
-using System.Drawing;
+using System;
+using System.Collections.Generic;
+using System.Text;
 
-namespace OpenTKTutorial
+namespace GLDataPlayground
 {
     public static class ExtensionMethods
     {
@@ -22,21 +24,6 @@ namespace OpenTKTutorial
                 Z = value.Z.MapValue(fromStart, fromStop, toStart, toStop),
                 W = value.W.MapValue(fromStart, fromStop, toStart, toStop)
             };
-        }
-
-
-        public static Vector4 ToVector4(this Color clr) => new Vector4(clr.R, clr.G, clr.B, clr.A);
-
-        public static Vector4 ToGLColor(this Color value)
-        {
-            var vec4 = value.ToVector4();
-            return vec4.MapValues(0, 255, 0, 1);
-        }
-
-
-        public static Rectangle ToSubTextureRect(this SubTextureRect rect)
-        {
-            return new Rectangle(rect.X, rect.Y, rect.Width, rect.Height);
         }
     }
 }

@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Drawing;
 using OpenToolkit.Graphics.OpenGL4;
+using OpenToolkit.Mathematics;
 
 namespace OpenTKTutorial
 {
@@ -11,7 +13,6 @@ namespace OpenTKTutorial
     public class VertexBuffer<T> : IDisposable where T : struct
     {
         #region Private Fields
-        private static readonly List<int> _boundBuffers = new List<int>();
         private bool _disposedValue = false;
         #endregion
 
@@ -20,16 +21,19 @@ namespace OpenTKTutorial
         /// <summary>
         /// Creates a new instance of <see cref="VertexBuffer"/>.
         /// </summary>
-        /// <param name="gl">Provides access to OpenGL funtionality.</param>
-        /// <param name="data">The vertex data to send to the GPU.</param>
-        public VertexBuffer(T[] data)
+        /// <param name="totalQuads">The total number of quads to allocate in the data buffer.</param>
+        public VertexBuffer(int totalQuads)
         {
-            if (data is null)
-                throw new ArgumentNullException(nameof(data), "The param must not be null");
-
             ID = GL.GenBuffer();
 
-            UploadDataToGPU(data);
+            var quadData = new List<QuadData>();
+
+            for (int i = 0; i < totalQuads; i++)
+            {
+                quadData.Add(CreateQuad());
+            }
+
+            UploadQuadData(quadData.ToArray());
         }
         #endregion
 
@@ -48,11 +52,7 @@ namespace OpenTKTutorial
         /// </summary>
         public void Bind()
         {
-            if (_boundBuffers.Contains(ID))
-                return;
-
             GL.BindBuffer(BufferTarget.ArrayBuffer, ID);
-            _boundBuffers.Add(ID);
         }
 
 
@@ -61,11 +61,39 @@ namespace OpenTKTutorial
         /// </summary>
         public void Unbind()
         {
-            if (!_boundBuffers.Contains(ID))
-                return;
-
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
-            _boundBuffers.Remove(ID);
+        }
+
+
+        public void UpdateSrcRectangle(Rectangle srcRect, int textureWidth, int textureHeight)
+        {
+            //Map texture topleft origin and width and height to bottomleft corner
+            var topLeftCornerX = srcRect.Left.MapValue(0, textureWidth, 0, 1);
+            var topLeftCornerY = srcRect.Top.MapValue(0, textureHeight, 1, 0);
+            var topLeftCoord = new Vector2(topLeftCornerX, topLeftCornerY);
+
+            var topRightCornerX = srcRect.Right.MapValue(0, textureWidth, 0, 1);
+            var topRightCornerY = srcRect.Top.MapValue(0, textureHeight, 1, 0);
+            var topRightCoord = new Vector2(topRightCornerX, topRightCornerY);
+
+            var bottomRightCornerX = srcRect.Right.MapValue(0, textureWidth, 0, 1);
+            var bottomRightCornerY = srcRect.Bottom.MapValue(0, textureHeight, 1, 0);
+            var bottomRightCoord = new Vector2(bottomRightCornerX, bottomRightCornerY);
+
+            var bottomLeftCornerX = srcRect.Left.MapValue(0, textureWidth, 0, 1);
+            var bottomLeftCornerY = srcRect.Bottom.MapValue(0, textureHeight, 1, 0);
+            var bottomLeftCoord = new Vector2(bottomLeftCornerX, bottomLeftCornerY);
+
+            var totalVertexBytes = VertexDataAnalyzer.GetTotalBytesForStruct(typeof(VertexData));
+            var totalQuadSizeInBytes = totalVertexBytes * 4;
+
+            var quadData = CreateQuad();
+            quadData.Vertex1.TextureCoord = topLeftCoord;
+            quadData.Vertex2.TextureCoord = topRightCoord;
+            quadData.Vertex3.TextureCoord = bottomRightCoord;
+            quadData.Vertex4.TextureCoord = bottomLeftCoord;
+
+            GL.BufferSubData(BufferTarget.ArrayBuffer, new IntPtr(0), totalQuadSizeInBytes, ref quadData);
         }
 
 
@@ -103,16 +131,54 @@ namespace OpenTKTutorial
 
 
         #region Private Methods
-        /// <summary>
-        /// Uploads the given <paramref name="data"/> to the GPU.
-        /// </summary>
-        /// <param name="data">The data to upload.</param>
-        [SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "<Pending>")]
-        private void UploadDataToGPU(T[] data)
+        private void UploadQuadData(QuadData[] data)
         {
+            const int totalValuesPerVertice = 5;
+            const int floatByteSize = sizeof(float);
+            int totalVertices = data.Length * 4;
+            int dataSizeInBytes = totalVertices * totalValuesPerVertice * floatByteSize;
+
+            var verticeData = new List<VertexData>();
+
+            foreach (var vertice in data)
+            {
+                verticeData.AddRange(vertice.Vertices);
+            }
+
             Bind();
-            GL.BufferData(BufferTarget.ArrayBuffer, data.Length * (5 * sizeof(float)), data, BufferUsageHint.StaticDraw);
+            GL.BufferData(BufferTarget.ArrayBuffer, dataSizeInBytes, verticeData.ToArray(), BufferUsageHint.StaticDraw);
             Unbind();
+        }
+
+
+        private QuadData CreateQuad()
+        {
+            return new QuadData
+            {
+                Vertex1 = new VertexData()
+                {
+                    Vertex = new Vector3(-1, 1, 0),//Top Left
+                    TextureCoord = new Vector2(0, 1)
+                },
+
+                Vertex2 = new VertexData()
+                {
+                    Vertex = new Vector3(1, 1, 0),//Top Right
+                    TextureCoord = new Vector2(1, 1)
+                },
+
+                Vertex3 = new VertexData()
+                {
+                    Vertex = new Vector3(1, -1, 0),//Bottom Right
+                    TextureCoord = new Vector2(1, 0)
+                },
+
+                Vertex4 = new VertexData()
+                {
+                    Vertex = new Vector3(-1, -1, 0),//Bottom Left
+                    TextureCoord = new Vector2(0, 0)
+                }
+            };
         }
         #endregion
     }

@@ -36,7 +36,6 @@ namespace OpenTKTutorial
             GL.EnableVertexArrayAttrib(ID, 0);
             GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 5 * sizeof(float), 0);
 
-
             //Setup aTexCoord attribute
             GL.EnableVertexArrayAttrib(ID, 1);
             GL.VertexAttribPointer(1, 2, VertexAttribPointerType.Float, false, 5 * sizeof(float), 3 * sizeof(float));

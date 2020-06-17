@@ -10,8 +10,7 @@ in vec4 v_TintClr;
 
 out vec4 o_OutputColor;
 
-
-uniform sampler2D texture0;
+uniform sampler2D texture0;//For regular texture rendering
 
 
 void main ()
