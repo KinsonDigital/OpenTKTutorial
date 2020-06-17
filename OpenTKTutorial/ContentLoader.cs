@@ -1,12 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using NETColor = System.Drawing.Color;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using System;
 using System.Text.Json;
+using NETRectangle = System.Drawing.Rectangle;
 
 namespace OpenTKTutorial
 {
@@ -47,7 +47,7 @@ namespace OpenTKTutorial
         }
 
 
-        public static SubTextureRect[] LoadAtlasData(string fileName)
+        public static NETRectangle[] LoadAtlasData(string fileName)
         {
             var contentDir = $@"{_appPathDir}Content\";
             var graphicsContent = $@"{contentDir}Graphics\";
@@ -56,7 +56,7 @@ namespace OpenTKTutorial
             var rawData = File.ReadAllText($"{graphicsContent}{fileName}");
 
 
-            return JsonSerializer.Deserialize<SubTextureRect[]>(rawData);
+            return JsonSerializer.Deserialize<NETRectangle[]>(rawData);
         }
 
 

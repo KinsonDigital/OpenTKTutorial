@@ -10,11 +10,10 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using SixLabors.ImageSharp;
 using NETColor = System.Drawing.Color;
-using NETRectangle = System.Drawing.Rectangle;
 using System.Text.Json;
 using OpenToolkit.Mathematics;
+using System.Drawing;
 
 namespace OpenTKTutorial
 {
@@ -29,7 +28,7 @@ namespace OpenTKTutorial
         private double _elapsedTime;
         private ITexture _textureAtlas;
         private ITexture _backgroundTexture;
-        private SubTextureRect[] _subTextures;
+        private Rectangle[] _subTextures;
         private Renderer _renderer;
         private Vector2 _linkPosition;
         private List<Vector2> _quadPositions = new List<Vector2>();
@@ -150,8 +149,8 @@ namespace OpenTKTutorial
 
             _renderer.Render(
                 _backgroundTexture,
-                new NETRectangle(0, 0, _backgroundTexture.Width, _backgroundTexture.Height),
-                new NETRectangle(0, 0, _backgroundTexture.Width, _backgroundTexture.Height),
+                new Rectangle(0, 0, _backgroundTexture.Width, _backgroundTexture.Height),
+                new Rectangle(0, 0, _backgroundTexture.Width, _backgroundTexture.Height),
                 1,
                 0,
                 NETColor.White);
@@ -160,9 +159,9 @@ namespace OpenTKTutorial
             {
                 _linkPosition = _quadPositions[i];
 
-                var destRect = new NETRectangle((int)_linkPosition.X, (int)_linkPosition.Y, _textureAtlas.Width, _textureAtlas.Height);
+                var destRect = new Rectangle((int)_linkPosition.X, (int)_linkPosition.Y, _textureAtlas.Width, _textureAtlas.Height);
 
-                _renderer.Render(_textureAtlas, _subTextures[i].ToSubTextureRect(), destRect, 1, 0, NETColor.White);
+                _renderer.Render(_textureAtlas, _subTextures[i], destRect, 1, 0, NETColor.White);
             }
 
             _renderer.End();

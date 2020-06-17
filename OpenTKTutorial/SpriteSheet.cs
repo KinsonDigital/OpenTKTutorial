@@ -1,10 +1,4 @@
-﻿using OpenToolkit.Graphics.OpenGL4;
-using SixLabors.ImageSharp;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using System.Text.Json;
+﻿using System.Drawing;
 
 namespace OpenTKTutorial
 {
@@ -17,7 +11,7 @@ namespace OpenTKTutorial
         }
 
 
-        public SubTextureRect [] SubTextures { get; private set; }
+        public Rectangle[] SubTextures { get; private set; }
 
 
         public ITexture TextureAtlas { get; private set; }
