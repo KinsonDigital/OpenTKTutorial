@@ -11,10 +11,10 @@ namespace OpenTKTutorial
     public class GPUBuffer<T> where T : struct
     {
         private int _vertexBufferID = -1;
-        private int _indexBufferID;
-        private int _vertexArrayID;
+        private int _indexBufferID = -1;
+        private int _vertexArrayID = -1;
         private int _totalVertexBytes;
-        private readonly int _totalQuadSizeInBytes;
+        private int _totalQuadSizeInBytes;
 
         public GPUBuffer(int totalQuads)
         {
@@ -28,15 +28,13 @@ namespace OpenTKTutorial
             BindVertexBuffer();
             BindIndexBuffer();
 
-            SetupAttribPointers(_vertexArrayID, typeof(T));
-            _totalVertexBytes = VertexDataAnalyzer.GetTotalBytesForStruct(typeof(T));
-            _totalQuadSizeInBytes = _totalVertexBytes * 4;
+            SetupAttribPointers(_vertexArrayID);
         }
 
 
-        private void SetupAttribPointers<T>(int vertexArrayID, T structType) where T : Type
+        private void SetupAttribPointers(int vertexArrayID)
         {
-            var props = structType.GetFields();
+            var props = typeof(T).GetFields();
 
             /*TODO:
              * 3. Possibly use an custom attribute to set the shader location of a field
@@ -47,7 +45,7 @@ namespace OpenTKTutorial
 
             for (int i = 0; i < props.Length; i++)
             {
-                var stride = VertexDataAnalyzer.GetTotalBytesForStruct(structType);
+                var stride = _totalVertexBytes;
                 var size = VertexDataAnalyzer.TotalItemsForType(props[i].FieldType);
                 var attribType = VertexDataAnalyzer.GetVertexPointerType(props[i].FieldType);
 
@@ -78,7 +76,6 @@ namespace OpenTKTutorial
 
 
         #region Private Methods
-        //GOOD
         private void UpdateTextureCoordinates(ref QuadData quad, Rectangle srcRect, int textureWidth, int textureHeight)
         {
             //TODO: Cache this value to avoid reflection for perf boost
@@ -106,14 +103,11 @@ namespace OpenTKTutorial
         }
 
 
-        private static Vector2 ToGLTextureCoord(int x, int y, int width, int height)
-        {
-            return new Vector2(x.MapValue(0, width, 0, 1), y.MapValue(0, height, 1, 0));
-        }
-
-
         private void CreateVertexBuffer(int totalQuads)
         {
+            _totalVertexBytes = VertexDataAnalyzer.GetTotalBytesForStruct(typeof(T));
+            _totalQuadSizeInBytes = _totalVertexBytes * 4;
+
             _vertexBufferID = GL.GenBuffer();
 
             var quadData = new List<QuadData>();
@@ -123,7 +117,7 @@ namespace OpenTKTutorial
                 quadData.Add(CreateQuad());
             }
 
-            UploadQuadData(quadData.ToArray());
+            AllocateBuffer(quadData.ToArray());
         }
 
 
@@ -184,12 +178,9 @@ namespace OpenTKTutorial
         }
 
 
-        private void UploadQuadData(QuadData[] data)
+        private void AllocateBuffer(QuadData[] data)
         {
-            var totalVertexBytes = VertexDataAnalyzer.GetTotalBytesForStruct(typeof(VertexData));
-            var totalQuadSizeInBytes = totalVertexBytes * 4;
-            var dataTotal = totalQuadSizeInBytes * data.Length;
-
+            var sizeInBytes = _totalQuadSizeInBytes * data.Length;
 
             var verticeData = new List<VertexData>();
 
@@ -199,7 +190,7 @@ namespace OpenTKTutorial
             }
 
             BindVertexBuffer();
-            GL.BufferData(BufferTarget.ArrayBuffer, dataTotal, verticeData.ToArray(), BufferUsageHint.DynamicDraw);
+            GL.BufferData(BufferTarget.ArrayBuffer, sizeInBytes, IntPtr.Zero, BufferUsageHint.DynamicDraw);
             UnbindVertexBuffer();
         }
 
