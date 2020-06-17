@@ -1,6 +1,5 @@
 ﻿using OpenToolkit.Mathematics;
 using System.Runtime.InteropServices;
-using System.Xml.Serialization;
 
 namespace OpenTKTutorial
 {

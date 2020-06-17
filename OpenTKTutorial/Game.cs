@@ -2,8 +2,6 @@ using OpenToolkit.Windowing.Common;
 using OpenToolkit.Windowing.Desktop;
 using OpenToolkit.Windowing.Common.Input;
 using OpenToolkit.Graphics.OpenGL4;
-using System.IO;
-using System.Reflection;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System;
@@ -11,7 +9,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using NETColor = System.Drawing.Color;
-using System.Text.Json;
 using OpenToolkit.Mathematics;
 using System.Drawing;
 

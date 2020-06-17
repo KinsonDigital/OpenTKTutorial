@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
 using System.Text;
 using OpenToolkit.Graphics.OpenGL4;
-using OpenToolkit.Mathematics;
 
 namespace OpenTKTutorial
 {

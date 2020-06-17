@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using OpenToolkit.Graphics.OpenGL4;
+﻿using OpenToolkit.Graphics.OpenGL4;
 
 namespace OpenTKTutorial
 {
