@@ -38,5 +38,30 @@ namespace OpenTKTutorial
         {
             return new Rectangle(rect.X, rect.Y, rect.Width, rect.Height);
         }
+
+
+        public static bool IsPowerOfTwo(this ulong x)
+        {
+            return (x != 0) && ((x & (x - 1)) == 0);
+        }
+
+
+        public static bool IsPowerOfTwo(this long x)
+        {
+            return (x != 0) && ((x & (x - 1)) == 0);
+        }
+
+
+        public static bool IsPowerOfTwo(this int x)
+        {
+            return (x != 0) && ((x & (x - 1)) == 0);
+        }
+
+
+        public static bool IsPowerOfTwo(this byte x)
+        {
+            return (x != 0) && ((x & (x - 1)) == 0);
+        }
+
     }
 }

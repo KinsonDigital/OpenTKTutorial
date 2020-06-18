@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using OpenToolkit.Graphics.OpenGL4;
@@ -13,6 +14,7 @@ namespace OpenTKTutorial
     {
         #region Private Fields
         private readonly Dictionary<string, int> _uniformLocations = new Dictionary<string, int>();
+        private readonly int _batchSize;
         private bool _disposedValue;
         #endregion
 
@@ -24,8 +26,10 @@ namespace OpenTKTutorial
         /// <param name="gl">Provides access to OpenGL funtionality.</param>
         /// <param name="vertexShaderPath">The path to the vertex shader code.</param>
         /// <param name="fragmentShaderPath">The path to the fragment shader code.</param>
-        public ShaderProgram(string vertexShaderPath, string fragmentShaderPath)
+        public ShaderProgram(int batchSize, string vertexShaderPath, string fragmentShaderPath)
         {
+            _batchSize = batchSize;
+
             var shaderSource = LoadShaderData(vertexShaderPath);
             VertexShaderId = CreateShader(ShaderType.VertexShader, shaderSource);
 
@@ -226,11 +230,50 @@ namespace OpenTKTutorial
         private string LoadShaderData(string shaderFilePath)
         {
             //Load the source code from the shader files
-            var result = string.Empty;
+            var result = new StringBuilder();
 
             using (var reader = new StreamReader(shaderFilePath, Encoding.UTF8))
             {
-                result = reader.ReadToEnd();
+                while(!reader.EndOfStream)
+                {
+                    var line = reader.ReadLine();
+
+                    line = ProcessLine(line);
+
+                    result.AppendLine(line);
+                }
+            }
+
+
+            return result.ToString();
+        }
+
+
+        private string ProcessLine(string line)
+        {
+            var result = string.Empty;
+
+            //If the line of code has a replacement tag on it
+            if (line.Contains("//$REPLACE_INDEX"))
+            {
+                var sections = line.Split(' ');
+
+                //Find the section with the array brackets
+                for (int i = 0; i < sections.Length; i++)
+                {
+                    if (sections[i].Contains('[') && sections[i].Contains(']'))
+                    {
+                        result += $"{sections[i].Split('[')[0]}[{_batchSize}];//MODIFIED_DURING_COMPILE_TIME";
+                    }
+                    else
+                    {
+                        result += sections[i] + ' ';
+                    }
+                }
+            }
+            else
+            {
+                result = line;
             }
 
 

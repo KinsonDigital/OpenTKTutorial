@@ -8,7 +8,7 @@ layout(location = 2) in float aTransformIndex;
 //Uniforms are vars that can dynamically take in data
 //from the CPU side at will
 uniform vec4 u_TintColor;
-uniform mat4 uTransform[48];//TODO: Possibly to be dynamic
+uniform mat4 uTransform[48];//$REPLACE_INDEX
 
 //These are vars that send data out and can be
 //used as input into the fragment shader

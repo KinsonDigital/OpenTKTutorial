@@ -6,7 +6,7 @@ using System.Drawing;
 
 namespace OpenTKTutorial
 {
-    public class Renderer : IDisposable
+    public class SpriteBatch : IDisposable
     {
         #region Private Fields
         private readonly int _renderSurfaceWidth;
@@ -17,23 +17,23 @@ namespace OpenTKTutorial
         private readonly int _transDataLocation;
         private readonly int _tintClrLocation;
         private readonly Dictionary<int, SpriteBatchItem> _batchItems = new Dictionary<int, SpriteBatchItem>();
+        private readonly ShaderProgram _shader;
         private bool _hasBegun;
-        private int _maxBatchSize = 48;
+        private int _maxBatchSize = 4;
         private int _currentBatchItem = 0;
         private int _previousTextureID = -1;
-        private int _currentTextureID;
         #endregion
 
 
         #region Constructors
-        public Renderer(ShaderProgram shader, int renderSurfaceWidth, int renderSurfaceHeight)
+        public SpriteBatch(int renderSurfaceWidth, int renderSurfaceHeight)
         {
+            _shader = new ShaderProgram(_maxBatchSize, "shader.vert", "shader.frag");
+
             for (int i = 0; i < _maxBatchSize; i++)
             {
                 _batchItems.Add(i, SpriteBatchItem.Empty);
             }
-
-            Shader = shader;
 
             _renderSurfaceWidth = renderSurfaceWidth;
             _renderSurfaceHeight = renderSurfaceHeight;
@@ -44,18 +44,13 @@ namespace OpenTKTutorial
 
             GL.ActiveTexture(TextureUnit.Texture0);
 
-            Shader.UseProgram();
+            _shader.UseProgram();
 
             _gpuBuffer = new GPUBuffer<VertexData>(_maxBatchSize);
 
-            _transDataLocation = GL.GetUniformLocation(Shader.ProgramId, "uTransform");
-            _tintClrLocation = GL.GetUniformLocation(Shader.ProgramId, "u_TintColor");
+            _transDataLocation = GL.GetUniformLocation(_shader.ProgramId, "uTransform");
+            _tintClrLocation = GL.GetUniformLocation(_shader.ProgramId, "u_TintColor");
         }
-        #endregion
-
-
-        #region Props
-        public ShaderProgram Shader { get; private set; }
         #endregion
 
 
@@ -70,8 +65,6 @@ namespace OpenTKTutorial
         {
             if (!_hasBegun)
                 throw new Exception("Must call begin() first");
-
-            _currentTextureID = texture.ID;
 
             //Has the textures switched
             if (texture.ID != _previousTextureID && _previousTextureID != -1)
@@ -231,7 +224,7 @@ namespace OpenTKTutorial
 
             if (disposing)
             {
-                Shader.Dispose();
+                _shader.Dispose();
                 //_vertexBuffer.Dispose();
                 //_indexBuffer.Dispose();
                 //_vertexArray.Dispose();

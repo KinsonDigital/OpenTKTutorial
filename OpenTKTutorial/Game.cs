@@ -20,10 +20,9 @@ namespace OpenTKTutorial
     public class Game : GameWindow
     {
         #region Private Fields
-        private ShaderProgram _shader;
         private bool _isShuttingDown;
         private double _elapsedTime;
-        private Renderer _renderer;
+        private SpriteBatch _spriteBatch;
         private Vector2 _linkPosition;
         private readonly Dictionary<int, ITexture> _texturePool = new Dictionary<int, ITexture>();
         private Entity _backgroundEntity;
@@ -46,8 +45,7 @@ namespace OpenTKTutorial
             GL.Enable(EnableCap.DebugOutputSynchronous);
             GL.DebugMessageCallback(DebugCallback, Marshal.StringToHGlobalAnsi(name));
 
-            _shader = new ShaderProgram("shader.vert", "shader.frag");
-            _renderer = new Renderer(_shader, nativeWindowSettings.Size.X, nativeWindowSettings.Size.Y);
+            _spriteBatch = new SpriteBatch(nativeWindowSettings.Size.X, nativeWindowSettings.Size.Y);
 
             var backgroundTexture = ContentLoader.CreateTexture("dungeon.png");
             _texturePool.Add(backgroundTexture.ID, backgroundTexture);
@@ -70,7 +68,7 @@ namespace OpenTKTutorial
             {
                 var newEntity = new AtlasEntity(mainAtlasTexture.ID, _atlasSubRects["link"]) 
                 {
-                    Position = new Vector2(random.Next(0, 1020), random.Next(0, 800)),
+                    Position = new Vector2(random.Next(50, 970), random.Next(120, 680)),
                     TintColor = Color.FromArgb(
                         255,
                         random.Next(0, 255),
@@ -162,17 +160,17 @@ namespace OpenTKTutorial
 
         private void Render()
         {
-            _renderer.Begin();
+            _spriteBatch.Begin();
 
             var backgroundTexture = _texturePool[_backgroundEntity.TextureID];
 
-            _renderer.Render(
-                backgroundTexture,
-                new Rectangle(0, 0, backgroundTexture.Width, backgroundTexture.Height),
-                new Rectangle(0, 0, backgroundTexture.Width, backgroundTexture.Height),
-                1,
-                0,
-                NETColor.White);
+            //_renderer.Render(
+            //    backgroundTexture,
+            //    new Rectangle(0, 0, backgroundTexture.Width, backgroundTexture.Height),
+            //    new Rectangle(0, 0, backgroundTexture.Width, backgroundTexture.Height),
+            //    1,
+            //    0,
+            //    NETColor.White);
 
             var atlasTexture = _texturePool[_atlasID];
 
@@ -180,10 +178,10 @@ namespace OpenTKTutorial
             {
                 var destRect = new Rectangle((int)_linkEntities[i].Position.X, (int)_linkEntities[i].Position.Y, atlasTexture.Width, atlasTexture.Height);
 
-                _renderer.Render(atlasTexture, _linkEntities[i].AtlasSubRect.ToRectangle(), destRect, 1, 0, NETColor.White);
+                _spriteBatch.Render(atlasTexture, _linkEntities[i].AtlasSubRect.ToRectangle(), destRect, 1, 0, NETColor.White);
             }
 
-            _renderer.End();
+            _spriteBatch.End();
         }
 
 
