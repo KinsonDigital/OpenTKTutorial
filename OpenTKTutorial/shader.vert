@@ -3,11 +3,11 @@
 //These are vars that take in data from the vertex data buffer
 layout(location = 0) in vec3 aPosition;
 layout(location = 1) in vec2 aTexCoord;
-layout(location = 2) in float aTransformIndex;
+layout(location = 2) in vec4 aTintColor;
+layout(location = 3) in float aTransformIndex;
 
 //Uniforms are vars that can dynamically take in data
 //from the CPU side at will
-uniform vec4 u_TintColor;
 uniform mat4 uTransform[1];//$REPLACE_INDEX
 
 //These are vars that send data out and can be
@@ -18,7 +18,7 @@ out vec4 v_TintClr;
 
 void main()
 {
-    v_TintClr = u_TintColor;
+    v_TintClr = aTintColor;
     v_TexCoord = aTexCoord;
 
     int index = int(aTransformIndex);

@@ -20,7 +20,7 @@ namespace OpenTKTutorial
         private readonly Dictionary<int, SpriteBatchItem> _batchItems = new Dictionary<int, SpriteBatchItem>();
         private readonly ShaderProgram _shader;
         private bool _hasBegun;
-        private int _maxBatchSize = 10;
+        private int _maxBatchSize = 48;
         private int _currentBatchItem = 0;
         private int _previousTextureID = -1;
         private bool _firstRender;
@@ -105,7 +105,6 @@ namespace OpenTKTutorial
             if (_batchItems.Count(i => !i.Value.IsEmpty) <= 0)
                 return;
 
-            //DEBUGGING ONLY
             RenderBatch();
             _currentBatchItem = 0;
             _previousTextureID = 0;
@@ -124,9 +123,6 @@ namespace OpenTKTutorial
 
                 GL.BindTexture(TextureTarget.Texture2D, _batchItems[i].TextureID);
 
-                //Add GPU data update
-                UpdateGPUColorData(_batchItems[i].TintColor);
-
                 UpdateGPUTransform(
                     i,
                     _batchItems[i].DestRect.X,
@@ -136,7 +132,12 @@ namespace OpenTKTutorial
                     _batchItems[i].Size,
                     _batchItems[i].Angle);
 
-                _gpuBuffer.UpdateQuad(i, _batchItems[i].SrcRect, _batchItems[i].DestRect.Width, _batchItems[i].DestRect.Height);
+                _gpuBuffer.UpdateQuad(
+                    i,
+                    _batchItems[i].SrcRect,
+                    _batchItems[i].DestRect.Width,
+                    _batchItems[i].DestRect.Height,
+                    _batchItems[i].TintColor);
 
                 batchAmountToRender += 1;
             }
@@ -168,14 +169,6 @@ namespace OpenTKTutorial
 
 
         #region Private Methods
-        private void UpdateGPUColorData(Color tintClr)
-        {
-            var tintClrData = tintClr.ToGLColor();
-
-            GL.Uniform4(_tintClrLocation, tintClrData);
-        }
-
-
         private void UpdateGPUTransform(int quadID, float x, float y, int width, int height, float size, float angle)
         {
             //Create and send the transformation data to the GPU

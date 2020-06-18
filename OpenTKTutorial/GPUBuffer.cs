@@ -41,28 +41,42 @@ namespace OpenTKTutorial
              */
 
             var offset = 0;
+            var previousSize = 0;//The element size of the previous field
 
             for (int i = 0; i < props.Length; i++)
             {
                 var stride = _totalVertexBytes;
+
+                //The number of float elements in the field. Ex: Vector3 has a size of 3
                 var size = VertexDataAnalyzer.TotalItemsForType(props[i].FieldType);
+
+                //The type of OpenGL VertexAttribPointerType based on the field type
                 var attribType = VertexDataAnalyzer.GetVertexPointerType(props[i].FieldType);
 
                 GL.EnableVertexArrayAttrib(vertexArrayID, i);
 
-                offset = i == 0 ? 0 : offset + (size + 1) * VertexDataAnalyzer.GetTypeByteSize(typeof(float));
+                offset = i == 0 ? 0 : offset + ((previousSize) * VertexDataAnalyzer.GetTypeByteSize(typeof(float)));
                 GL.VertexAttribPointer(i, size, attribType, false, stride, offset);
+
+                previousSize = size;
             }
         }
 
 
         #region Public Methods
-        public void UpdateQuad(int quadID, Rectangle srcRect, int textureWidth, int textureHeight)
+        public void UpdateQuad(int quadID, Rectangle srcRect, int textureWidth, int textureHeight, Color tintColor)
         {
             var quadData = CreateQuad();
 
             UpdateTextureCoordinates(ref quadData, srcRect, textureWidth, textureHeight);
 
+            //Update the color
+            quadData.Vertex1.TintColor = tintColor.ToGLColor();
+            quadData.Vertex2.TintColor = tintColor.ToGLColor();
+            quadData.Vertex3.TintColor = tintColor.ToGLColor();
+            quadData.Vertex4.TintColor = tintColor.ToGLColor();
+
+            //Update the quad ID
             quadData.Vertex1.TransformIndex = quadID;
             quadData.Vertex2.TransformIndex = quadID;
             quadData.Vertex3.TransformIndex = quadID;
@@ -180,13 +194,6 @@ namespace OpenTKTutorial
         private void AllocateBuffer(QuadData[] data)
         {
             var sizeInBytes = _totalQuadSizeInBytes * data.Length;
-
-            var verticeData = new List<VertexData>();
-
-            foreach (var vertice in data)
-            {
-                verticeData.AddRange(vertice.Vertices);
-            }
 
             BindVertexBuffer();
             GL.BufferData(BufferTarget.ArrayBuffer, sizeInBytes, IntPtr.Zero, BufferUsageHint.DynamicDraw);

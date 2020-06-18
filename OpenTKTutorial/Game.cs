@@ -30,7 +30,7 @@ namespace OpenTKTutorial
         private readonly int _atlasID;
         private readonly Dictionary<string, AtlasSubRect> _atlasSubRects;
         private Entity _linkEntity;
-        private int _totalEntities = 48;
+        private int _totalEntities = 10;
         #endregion
 
         //TODO: Need to finish the custom batching process including setting the total batch size in the shaders
@@ -105,16 +105,19 @@ namespace OpenTKTutorial
 
             alphaResult = alphaResult > 255 ? 255 : alphaResult;
 
-            //_linkTexture.X = (float)EasingFunctions.EaseOutBounce(_elapsedTime * 1000, 200, 400, totalTime);
+            for (int i = 0; i < _linkEntities.Count; i++)
+            {
+                _linkEntities[i].Position = new Vector2((float)EasingFunctions.EaseOutBounce(_elapsedTime * 1000, 100, 800, totalTime), _linkEntities[i].Position.Y);
 
-            //_linkTexture.TintColor = NETColor.FromArgb(alphaResult,
-            //                                           _linkTexture.TintColor.R,
-            //                                           _linkTexture.TintColor.G,
-            //                                           _linkTexture.TintColor.B);
+                _linkEntities[i].TintColor = NETColor.FromArgb(alphaResult,
+                                                           _linkEntities[i].TintColor.R,
+                                                           _linkEntities[i].TintColor.G,
+                                                           _linkEntities[i].TintColor.B);
 
-            //_linkTexture.Angle = (float)EasingFunctions.EaseOutBounce(_elapsedTime * 1000, 0, 360, totalTime);
+                _linkEntities[i].Angle = (float)EasingFunctions.EaseOutBounce(_elapsedTime * 1000, 0, 360, totalTime);
+                _linkEntities[i].Size = (float)EasingFunctions.EaseOutBounce(_elapsedTime * 1000, 0.2f, 0.7f, totalTime);
+            }
 
-            //_linkTexture.Size = (float)EasingFunctions.EaseOutBounce(_elapsedTime * 1000, 0.5f, 0.5f, totalTime);
 
             //If the total time for the easing functions
             //to finish has expired, reset everything.
@@ -179,7 +182,13 @@ namespace OpenTKTutorial
             {
                 var destRect = new Rectangle((int)_linkEntities[i].Position.X, (int)_linkEntities[i].Position.Y, atlasTexture.Width, atlasTexture.Height);
 
-                _spriteBatch.Render(atlasTexture, _linkEntities[i].AtlasSubRect.ToRectangle(), destRect, 1, 0, NETColor.White);
+                _spriteBatch.Render(
+                    atlasTexture,
+                    _linkEntities[i].AtlasSubRect.ToRectangle(),
+                    destRect,
+                    _linkEntities[i].Size,
+                    _linkEntities[i].Angle,
+                    _linkEntities[i].TintColor);
             }
 
             _spriteBatch.End();

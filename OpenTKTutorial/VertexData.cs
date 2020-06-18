@@ -10,6 +10,8 @@ namespace OpenTKTutorial
 
         public Vector2 TextureCoord;//Location 1 | aTexCoord
 
-        public float TransformIndex;//Location 2 | aTransformIndex
+        public Vector4 TintColor;//Location 2 | aTintColor
+
+        public float TransformIndex;//Location 3 | aTransformIndex
     }
 }

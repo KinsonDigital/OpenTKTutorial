@@ -62,7 +62,8 @@ namespace OpenTKTutorial
         {
             { typeof(float), VertexAttribPointerType.Float },
             { typeof(Vector2), VertexAttribPointerType.Float },
-            { typeof(Vector3), VertexAttribPointerType.Float }
+            { typeof(Vector3), VertexAttribPointerType.Float },
+            { typeof(Vector4), VertexAttribPointerType.Float }
         };
 
 
