@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using OpenToolkit.Graphics.OpenGL4;
 
 namespace OpenTKTutorial
@@ -34,13 +35,13 @@ namespace OpenTKTutorial
         public int Height { get; protected set; }
 
 
-        public virtual void Bind()
+        public void Bind()
         {
             GL.BindTexture(TextureTarget.Texture2D, ID);
         }
 
 
-        public virtual void Unbind()
+        public void Unbind()
         {
 
         }
@@ -49,6 +50,7 @@ namespace OpenTKTutorial
         public void Dispose()
         {
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
 

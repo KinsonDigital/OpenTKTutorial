@@ -29,7 +29,6 @@ namespace OpenTKTutorial
         private readonly List<AtlasEntity> _linkEntities = new List<AtlasEntity>();
         private readonly int _atlasID;
         private readonly Dictionary<string, AtlasSubRect> _atlasSubRects;
-        private Entity _linkEntity;
         private int _totalEntities = 10;
         #endregion
 
@@ -37,9 +36,13 @@ namespace OpenTKTutorial
         //TODO: Need to add color to the vertex buffer and update its data
 
         #region Constructors
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "<Pending>")]
         public Game(GameWindowSettings gameWindowSettings, NativeWindowSettings nativeWindowSettings)
             : base(gameWindowSettings, nativeWindowSettings)
         {
+            if (nativeWindowSettings is null)
+                throw new ArgumentNullException(nameof(nativeWindowSettings), "The argument must not be null");
+
             string name = "Hello World";
 
             GL.Enable(EnableCap.DebugOutput);

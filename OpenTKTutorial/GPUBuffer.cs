@@ -89,7 +89,7 @@ namespace OpenTKTutorial
 
 
         #region Private Methods
-        private void UpdateTextureCoordinates(ref QuadData quad, Rectangle srcRect, int textureWidth, int textureHeight)
+        private static void UpdateTextureCoordinates(ref QuadData quad, Rectangle srcRect, int textureWidth, int textureHeight)
         {
             //TODO: Cache this value to avoid reflection for perf boost
             var topLeftCornerX = srcRect.Left.MapValue(0, textureWidth, 0, 1);
@@ -160,7 +160,7 @@ namespace OpenTKTutorial
         }
 
 
-        private QuadData CreateQuad()
+        private static QuadData CreateQuad()
         {
             return new QuadData
             {
@@ -204,7 +204,7 @@ namespace OpenTKTutorial
         private void BindVertexBuffer() => GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBufferID);
 
 
-        private void UnbindVertexBuffer() => GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+        private static void UnbindVertexBuffer() => GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
 
 
         /// <summary>
@@ -228,7 +228,7 @@ namespace OpenTKTutorial
         private void BindIndexBuffer() => GL.BindBuffer(BufferTarget.ElementArrayBuffer, _indexBufferID);
 
 
-        private void UnbindIndexBuffer() => GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
+        private static void UnbindIndexBuffer() => GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
 
 
         private void BindVertexArray() => GL.BindVertexArray(_vertexArrayID);

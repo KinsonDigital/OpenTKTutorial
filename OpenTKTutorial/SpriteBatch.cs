@@ -12,7 +12,6 @@ namespace OpenTKTutorial
         #region Private Fields
         private readonly int _renderSurfaceWidth;
         private readonly int _renderSurfaceHeight;
-        private VertexData[] _vertexBufferData;
         private readonly GPUBuffer<VertexData> _gpuBuffer;
         private bool _disposedValue = false;
         private readonly int _transDataLocation;
@@ -63,6 +62,7 @@ namespace OpenTKTutorial
         }
 
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "<Pending>")]
         public void Render(ITexture texture, Rectangle srcRect, Rectangle destRect, float size, float angle, Color tintColor)
         {
             if (!_hasBegun)
@@ -102,7 +102,7 @@ namespace OpenTKTutorial
 
         public void End()
         {
-            if (_batchItems.Count(i => !i.Value.IsEmpty) <= 0)
+            if (_batchItems.All(i => i.Value.IsEmpty))
                 return;
 
             RenderBatch();

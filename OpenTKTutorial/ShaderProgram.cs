@@ -135,7 +135,7 @@ namespace OpenTKTutorial
         /// <param name="vertexShaderId">The ID of the vertex shader.</param>
         /// <param name="fragmentShaderId">The ID of the fragment shader.</param>
         /// <returns></returns>
-        private int SetupShaderProgram(int vertexShaderId, int fragmentShaderId)
+        private static int SetupShaderProgram(int vertexShaderId, int fragmentShaderId)
         {
             var programHandle = GL.CreateProgram();
 
@@ -156,7 +156,7 @@ namespace OpenTKTutorial
         /// Links the program using the given <paramref name="shaderProgramId"/>.
         /// </summary>
         /// <param name="shaderProgramId">The ID of the shader program.</param>
-        private void LinkProgram(int shaderProgramId)
+        private static void LinkProgram(int shaderProgramId)
         {
             // We link the program
             GL.LinkProgram(shaderProgramId);
@@ -181,7 +181,7 @@ namespace OpenTKTutorial
         /// <param name="shaderType">The type of shader to create.</param>
         /// <param name="shaderSrc">The shader source code to use for the shader program.</param>
         /// <returns></returns>
-        private int CreateShader(ShaderType shaderType, string shaderSrc)
+        private static int CreateShader(ShaderType shaderType, string shaderSrc)
         {
             var shaderId = GL.CreateShader(shaderType);
 
@@ -199,7 +199,7 @@ namespace OpenTKTutorial
         /// </summary>
         /// <param name="shaderProgramId">The program ID of the shader.</param>
         /// <param name="shaderId">The shader ID of the shader.</param>
-        private void DestroyShader(int shaderProgramId, int shaderId)
+        private static void DestroyShader(int shaderProgramId, int shaderId)
         {
             GL.DetachShader(shaderProgramId, shaderId);
             GL.DeleteShader(shaderId);
@@ -210,7 +210,7 @@ namespace OpenTKTutorial
         /// Compiles the currently set shader source code on the GPU.
         /// </summary>
         /// <param name="shaderId">The shader ID.</param>
-        private void CompileShader(int shaderId)
+        private static void CompileShader(int shaderId)
         {
             // Try to compile the shader
             GL.CompileShader(shaderId);
@@ -261,7 +261,7 @@ namespace OpenTKTutorial
                 //Find the section with the array brackets
                 for (int i = 0; i < sections.Length; i++)
                 {
-                    if (sections[i].Contains('[') && sections[i].Contains(']'))
+                    if (sections[i].Contains('[', StringComparison.Ordinal) && sections[i].Contains(']', StringComparison.Ordinal))
                     {
                         result += $"{sections[i].Split('[')[0]}[{_batchSize}];//MODIFIED_DURING_COMPILE_TIME";
                     }

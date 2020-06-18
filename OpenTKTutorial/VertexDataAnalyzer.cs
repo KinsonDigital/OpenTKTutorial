@@ -66,10 +66,12 @@ namespace OpenTKTutorial
             { typeof(Vector4), VertexAttribPointerType.Float }
         };
 
-
-
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "<Pending>")]
         public static int GetTotalBytesForStruct(Type structType)
         {
+            if (structType is null)
+                throw new ArgumentNullException(nameof(structType), "The argument must not be null");
+
             if (!IsStruct(structType))
                 throw new Exception($"The given '{nameof(structType)}' must be a struct.");
 
@@ -99,8 +101,12 @@ namespace OpenTKTutorial
         public static int TotalItemsForType(Type type) => _totalItemsForTypes[type];
 
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "<Pending>")]
         public static int GetVertexSubDataOffset(Type structType, string subDataName)
         {
+            if (structType is null)
+                throw new ArgumentNullException(nameof(structType), "The argument must not be null");
+
             if (!IsStruct(structType))
                 throw new Exception($"The given '{nameof(structType)}' must be a struct.");
 
@@ -132,13 +138,6 @@ namespace OpenTKTutorial
 
 
         public static VertexAttribPointerType GetVertexPointerType(Type type) => _pointerTypeMappings[type];
-
-
-        public static int GetVertexDataOffset<T>(T[] vertexData, int vertexIndex, string subDataName)
-        {
-
-            return -1;
-        }
 
 
         private static bool IsStruct(Type type) => type.IsValueType && !type.IsEnum;
