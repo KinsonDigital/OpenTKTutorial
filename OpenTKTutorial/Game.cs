@@ -30,6 +30,7 @@ namespace OpenTKTutorial
         private readonly int _atlasID;
         private readonly Dictionary<string, AtlasSubRect> _atlasSubRects;
         private Entity _linkEntity;
+        private int _totalEntities = 48;
         #endregion
 
         //TODO: Need to finish the custom batching process including setting the total batch size in the shaders
@@ -64,7 +65,7 @@ namespace OpenTKTutorial
 
             var random = new Random();
 
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < _totalEntities; i++)
             {
                 var newEntity = new AtlasEntity(mainAtlasTexture.ID, _atlasSubRects["link"]) 
                 {

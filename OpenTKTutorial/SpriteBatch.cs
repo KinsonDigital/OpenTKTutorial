@@ -20,7 +20,7 @@ namespace OpenTKTutorial
         private readonly Dictionary<int, SpriteBatchItem> _batchItems = new Dictionary<int, SpriteBatchItem>();
         private readonly ShaderProgram _shader;
         private bool _hasBegun;
-        private int _maxBatchSize = 2;
+        private int _maxBatchSize = 10;
         private int _currentBatchItem = 0;
         private int _previousTextureID = -1;
         private bool _firstRender;
@@ -70,7 +70,8 @@ namespace OpenTKTutorial
 
             bool HasSwitchedTexture() => texture.ID != _previousTextureID && !_firstRender;
 
-            var totalBatchItems = _batchItems.Count(i => !i.Value.IsEmpty);
+            //var totalBatchItems = _batchItems.Count(i => !i.Value.IsEmpty);
+            var totalBatchItems = _batchItems.Values.ToArray().CountKD<SpriteBatchItem>(i => !i.IsEmpty);
 
             //Has the textures switched
             if (HasSwitchedTexture() || totalBatchItems >= _maxBatchSize)

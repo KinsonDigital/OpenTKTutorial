@@ -1,10 +1,28 @@
 ﻿using OpenToolkit.Mathematics;
+using System;
+using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 
 namespace OpenTKTutorial
 {
     public static class ExtensionMethods
     {
+        public static int CountKD<T>(this T[] items, Predicate<T> predicate)
+        {
+            var result = 0;
+
+            for (int i = 0; i < items.Length; i++)
+            {
+                if (predicate(items[i]))
+                    result += 1;
+            }
+
+
+            return result;
+        }
+
+
         public static float MapValue(this int value, float fromStart, float fromStop, float toStart, float toStop) =>
             MapValue((float)value, fromStart, fromStop, toStart, toStop);
 
