@@ -64,7 +64,7 @@ namespace OpenTKTutorial
 
             var random = new Random();
 
-            for (int i = 0; i < 48; i++)
+            for (int i = 0; i < 4; i++)
             {
                 var newEntity = new AtlasEntity(mainAtlasTexture.ID, _atlasSubRects["link"]) 
                 {

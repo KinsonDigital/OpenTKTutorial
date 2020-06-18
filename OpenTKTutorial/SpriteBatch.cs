@@ -3,6 +3,7 @@ using OpenToolkit.Mathematics;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 
 namespace OpenTKTutorial
 {
@@ -19,9 +20,10 @@ namespace OpenTKTutorial
         private readonly Dictionary<int, SpriteBatchItem> _batchItems = new Dictionary<int, SpriteBatchItem>();
         private readonly ShaderProgram _shader;
         private bool _hasBegun;
-        private int _maxBatchSize = 4;
+        private int _maxBatchSize = 2;
         private int _currentBatchItem = 0;
         private int _previousTextureID = -1;
+        private bool _firstRender;
         #endregion
 
 
@@ -66,13 +68,18 @@ namespace OpenTKTutorial
             if (!_hasBegun)
                 throw new Exception("Must call begin() first");
 
+            bool HasSwitchedTexture() => texture.ID != _previousTextureID && !_firstRender;
+
+            var totalBatchItems = _batchItems.Count(i => !i.Value.IsEmpty);
+
             //Has the textures switched
-            if (texture.ID != _previousTextureID && _previousTextureID != -1)
+            if (HasSwitchedTexture() || totalBatchItems >= _maxBatchSize)
             {
                 RenderBatch();
                 _currentBatchItem = 0;
                 _previousTextureID = 0;
             }
+
 
             _currentBatchItem = _currentBatchItem >= _maxBatchSize ? 0 : _currentBatchItem;
 
@@ -88,11 +95,15 @@ namespace OpenTKTutorial
 
             _currentBatchItem += 1;
             _previousTextureID = texture.ID;
+            _firstRender = true;
         }
 
 
         public void End()
         {
+            if (_batchItems.Count(i => !i.Value.IsEmpty) <= 0)
+                return;
+
             //DEBUGGING ONLY
             RenderBatch();
             _currentBatchItem = 0;
@@ -103,7 +114,7 @@ namespace OpenTKTutorial
 
         private void RenderBatch()
         {
-            var batchAmountToRender = 0;
+            var batchAmountToRender = _batchItems.Count(i => !i.Value.IsEmpty);
 
             for (int i = 0; i < _batchItems.Values.Count; i++)
             {
@@ -131,7 +142,8 @@ namespace OpenTKTutorial
 
             //Only render the amount of elements for the amount of batch items to render.
             //6 = the number of vertices/quad and each batch is a quad. batchAmontToRender is the total quads to render
-            GL.DrawElements(PrimitiveType.Triangles, 6 * batchAmountToRender, DrawElementsType.UnsignedInt, IntPtr.Zero);
+            if (batchAmountToRender > 0)
+                GL.DrawElements(PrimitiveType.Triangles, 6 * batchAmountToRender, DrawElementsType.UnsignedInt, IntPtr.Zero);
 
             EmptyBatchItems();
         }
