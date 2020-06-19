@@ -1,90 +1,89 @@
-using OpenToolkit.Graphics.OpenGL4;
-using OpenToolkit.Mathematics;
-using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
+﻿// <copyright file="SpriteBatch.cs" company="KinsonDigital">
+// Copyright (c) KinsonDigital. All rights reserved.
+// </copyright>
 
 namespace OpenTKTutorial
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Drawing;
+    using System.Linq;
+    using OpenToolkit.Graphics.OpenGL4;
+    using OpenToolkit.Mathematics;
+
     public class SpriteBatch : IDisposable
     {
-        #region Private Fields
-        private readonly int _renderSurfaceWidth;
-        private readonly int _renderSurfaceHeight;
-        private readonly GPUBuffer<VertexData> _gpuBuffer;
-        private bool _disposedValue = false;
-        private readonly int _transDataLocation;
-        private readonly int _tintClrLocation;
-        private readonly Dictionary<int, SpriteBatchItem> _batchItems = new Dictionary<int, SpriteBatchItem>();
-        private readonly ShaderProgram _shader;
-        private bool _hasBegun;
-        private int _maxBatchSize = 48;
-        private int _currentBatchItem = 0;
-        private int _previousTextureID = -1;
-        private bool _firstRender;
-        #endregion
+        private readonly int renderSurfaceWidth;
+        private readonly int renderSurfaceHeight;
+        private readonly GPUBuffer<VertexData> gpuBuffer;
+        private readonly int transDataLocation;
+        private readonly Dictionary<int, SpriteBatchItem> batchItems = new Dictionary<int, SpriteBatchItem>();
+        private readonly ShaderProgram shader;
+        private readonly int maxBatchSize = 48;
+        private bool disposedValue = false;
+        private bool hasBegun;
+        private int currentBatchItem = 0;
+        private int previousTextureID = -1;
+        private bool firstRender;
 
-
-        #region Constructors
         public SpriteBatch(int renderSurfaceWidth, int renderSurfaceHeight)
         {
-            _shader = new ShaderProgram(_maxBatchSize, "shader.vert", "shader.frag");
+            this.shader = new ShaderProgram(this.maxBatchSize, "shader.vert", "shader.frag");
 
-            for (int i = 0; i < _maxBatchSize; i++)
+            for (var i = 0; i < this.maxBatchSize; i++)
             {
-                _batchItems.Add(i, SpriteBatchItem.Empty);
+                this.batchItems.Add(i, SpriteBatchItem.Empty);
             }
 
-            _renderSurfaceWidth = renderSurfaceWidth;
-            _renderSurfaceHeight = renderSurfaceHeight;
+            this.renderSurfaceWidth = renderSurfaceWidth;
+            this.renderSurfaceHeight = renderSurfaceHeight;
 
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-            GL.ClearColor(0.2f, 0.3f, 0.3f, 1.0f);//TODO: Allow changing of this
+            GL.ClearColor(0.2f, 0.3f, 0.3f, 1.0f); // TODO: Allow changing of this
 
             GL.ActiveTexture(TextureUnit.Texture0);
 
-            _shader.UseProgram();
+            this.shader.UseProgram();
 
-            _gpuBuffer = new GPUBuffer<VertexData>(_maxBatchSize);
+            this.gpuBuffer = new GPUBuffer<VertexData>(this.maxBatchSize);
 
-            _transDataLocation = GL.GetUniformLocation(_shader.ProgramId, "uTransform");
-            _tintClrLocation = GL.GetUniformLocation(_shader.ProgramId, "u_TintColor");
-        }
-        #endregion
-
-
-        #region Public Methods
-        public void Begin()
-        {
-            _hasBegun = true;
+            this.transDataLocation = GL.GetUniformLocation(this.shader.ProgramId, "uTransform");
         }
 
+        public void Begin() => this.hasBegun = true;
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "<Pending>")]
+        /// <summary>
+        /// Renders the given <see cref="Texture"/> using the given parametters.
+        /// </summary>
+        /// <param name="texture">The texture to render.</param>
+        /// <param name="srcRect">The rectangle of the sub texture within the texture to render.</param>
+        /// <param name="destRect">The destination rectangle of rendering.</param>
+        /// <param name="size">The size to render the texture at. 1 is for 100%/normal size.</param>
+        /// <param name="angle">The angle of rotation in degrees of the rendering.</param>
+        /// <param name="tintColor">The color to apply to the rendering.</param>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "Exception message only used inside method.")]
         public void Render(ITexture texture, Rectangle srcRect, Rectangle destRect, float size, float angle, Color tintColor)
         {
-            if (!_hasBegun)
+            if (!this.hasBegun)
                 throw new Exception("Must call begin() first");
 
-            bool HasSwitchedTexture() => texture.ID != _previousTextureID && !_firstRender;
+            bool HasSwitchedTexture() => texture.ID != this.previousTextureID && !this.firstRender;
 
-            //var totalBatchItems = _batchItems.Count(i => !i.Value.IsEmpty);
-            var totalBatchItems = _batchItems.Values.ToArray().CountKD<SpriteBatchItem>(i => !i.IsEmpty);
+            // var totalBatchItems = _batchItems.Count(i => !i.Value.IsEmpty);
+            var totalBatchItems = this.batchItems.Values.ToArray().CountKD<SpriteBatchItem>(i => !i.IsEmpty);
 
-            //Has the textures switched
-            if (HasSwitchedTexture() || totalBatchItems >= _maxBatchSize)
+            // Has the textures switched
+            if (HasSwitchedTexture() || totalBatchItems >= this.maxBatchSize)
             {
                 RenderBatch();
-                _currentBatchItem = 0;
-                _previousTextureID = 0;
+                this.currentBatchItem = 0;
+                this.previousTextureID = 0;
             }
 
+            this.currentBatchItem = this.currentBatchItem >= this.maxBatchSize ? 0 : this.currentBatchItem;
 
-            _currentBatchItem = _currentBatchItem >= _maxBatchSize ? 0 : _currentBatchItem;
-
-            var batchItem = _batchItems[_currentBatchItem];
+            var batchItem = this.batchItems[this.currentBatchItem];
             batchItem.TextureID = texture.ID;
             batchItem.SrcRect = srcRect;
             batchItem.DestRect = destRect;
@@ -92,86 +91,105 @@ namespace OpenTKTutorial
             batchItem.Angle = angle;
             batchItem.TintColor = tintColor;
 
-            _batchItems[_currentBatchItem] = batchItem;
+            this.batchItems[this.currentBatchItem] = batchItem;
 
-            _currentBatchItem += 1;
-            _previousTextureID = texture.ID;
-            _firstRender = true;
+            this.currentBatchItem += 1;
+            this.previousTextureID = texture.ID;
+            this.firstRender = true;
         }
-
 
         public void End()
         {
-            if (_batchItems.All(i => i.Value.IsEmpty))
+            if (this.batchItems.All(i => i.Value.IsEmpty))
                 return;
 
             RenderBatch();
-            _currentBatchItem = 0;
-            _previousTextureID = 0;
-            _hasBegun = false;
+            this.currentBatchItem = 0;
+            this.previousTextureID = 0;
+            this.hasBegun = false;
         }
 
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting
+        /// unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting
+        /// unmanaged resources.
+        /// </summary>
+        /// <param name="disposing">True if managed resources should be disposed of.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (this.disposedValue)
+                return;
+
+            if (disposing)
+            {
+                this.shader.Dispose();
+
+                // _vertexBuffer.Dispose();
+                // _indexBuffer.Dispose();
+                // _vertexArray.Dispose();
+            }
+
+            this.disposedValue = true;
+        }
 
         private void RenderBatch()
         {
-            var batchAmountToRender = _batchItems.Count(i => !i.Value.IsEmpty);
+            var batchAmountToRender = this.batchItems.Count(i => !i.Value.IsEmpty);
 
-            for (int i = 0; i < _batchItems.Values.Count; i++)
+            for (var i = 0; i < this.batchItems.Values.Count; i++)
             {
-                if (_batchItems[i].IsEmpty)
+                if (this.batchItems[i].IsEmpty)
                     continue;
 
-                GL.BindTexture(TextureTarget.Texture2D, _batchItems[i].TextureID);
+                GL.BindTexture(TextureTarget.Texture2D, this.batchItems[i].TextureID);
 
                 UpdateGPUTransform(
                     i,
-                    _batchItems[i].DestRect.X,
-                    _batchItems[i].DestRect.Y,
-                    _batchItems[i].SrcRect.Width,
-                    _batchItems[i].SrcRect.Height,
-                    _batchItems[i].Size,
-                    _batchItems[i].Angle);
+                    this.batchItems[i].DestRect.X,
+                    this.batchItems[i].DestRect.Y,
+                    this.batchItems[i].SrcRect.Width,
+                    this.batchItems[i].SrcRect.Height,
+                    this.batchItems[i].Size,
+                    this.batchItems[i].Angle);
 
-                _gpuBuffer.UpdateQuad(
+                this.gpuBuffer.UpdateQuad(
                     i,
-                    _batchItems[i].SrcRect,
-                    _batchItems[i].DestRect.Width,
-                    _batchItems[i].DestRect.Height,
-                    _batchItems[i].TintColor);
+                    this.batchItems[i].SrcRect,
+                    this.batchItems[i].DestRect.Width,
+                    this.batchItems[i].DestRect.Height,
+                    this.batchItems[i].TintColor);
 
                 batchAmountToRender += 1;
             }
 
-            //Only render the amount of elements for the amount of batch items to render.
-            //6 = the number of vertices/quad and each batch is a quad. batchAmontToRender is the total quads to render
+            // Only render the amount of elements for the amount of batch items to render.
+            // 6 = the number of vertices/quad and each batch is a quad. batchAmontToRender is the total quads to render
             if (batchAmountToRender > 0)
                 GL.DrawElements(PrimitiveType.Triangles, 6 * batchAmountToRender, DrawElementsType.UnsignedInt, IntPtr.Zero);
 
             EmptyBatchItems();
         }
 
-
         private void EmptyBatchItems()
         {
-            for (int i = 0; i < _batchItems.Count; i++)
+            for (var i = 0; i < this.batchItems.Count; i++)
             {
-                _batchItems[i] = SpriteBatchItem.Empty;
+                this.batchItems[i] = SpriteBatchItem.Empty;
             }
         }
 
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-        #endregion
-
-
-        #region Private Methods
         private void UpdateGPUTransform(int quadID, float x, float y, int width, int height, float size, float angle)
         {
-            //Create and send the transformation data to the GPU
+            // Create and send the transformation data to the GPU
             var transMatrix = BuildTransformationMatrix(
                 x,
                 y,
@@ -180,10 +198,8 @@ namespace OpenTKTutorial
                 size,
                 angle);
 
-            
-            GL.UniformMatrix4(_transDataLocation + quadID, true, ref transMatrix);
+            GL.UniformMatrix4(this.transDataLocation + quadID, true, ref transMatrix);
         }
-
 
         /// <summary>
         /// Builds a complete transformation matrix using the given params.
@@ -194,50 +210,28 @@ namespace OpenTKTutorial
         /// <param name="height">The height of a texture.</param>
         /// <param name="size">The size of a texture. 1 represents normal size and 1.5 represents 150%.</param>
         /// <param name="angle">The angle of the texture.</param>
-        /// <returns></returns>
         private Matrix4 BuildTransformationMatrix(float x, float y, int width, int height, float size, float angle)
         {
-            var scaleX = (float)width / _renderSurfaceWidth;
-            var scaleY = (float)height / _renderSurfaceHeight;
+            var scaleX = (float)width / this.renderSurfaceWidth;
+            var scaleY = (float)height / this.renderSurfaceHeight;
 
             scaleX *= size;
             scaleY *= size;
 
-            var ndcX = x.MapValue(0f, _renderSurfaceWidth, -1f, 1f);
-            var ndcY = y.MapValue(0f, _renderSurfaceHeight, 1f, -1f);
+            var ndcX = x.MapValue(0f, this.renderSurfaceWidth, -1f, 1f);
+            var ndcY = y.MapValue(0f, this.renderSurfaceHeight, 1f, -1f);
 
-            //NOTE: (+ degrees) rotates CCW and (- degress) rotates CW
+            // NOTE: (+ degrees) rotates CCW and (- degress) rotates CW
             var angleRadians = MathHelper.DegreesToRadians(angle);
 
-            //Invert angle to rotate CW instead of CCW
+            // Invert angle to rotate CW instead of CCW
             angleRadians *= -1;
 
             var rotation = Matrix4.CreateRotationZ(angleRadians);
             var scaleMatrix = Matrix4.CreateScale(scaleX, scaleY, 1f);
             var positionMatrix = Matrix4.CreateTranslation(new Vector3(ndcX, ndcY, 0));
 
-
             return rotation * scaleMatrix * positionMatrix;
         }
-        #endregion
-
-
-        #region Protected Methods
-        protected virtual void Dispose(bool disposing)
-        {
-            if (_disposedValue)
-                return;
-
-            if (disposing)
-            {
-                _shader.Dispose();
-                //_vertexBuffer.Dispose();
-                //_indexBuffer.Dispose();
-                //_vertexArray.Dispose();
-            }
-
-            _disposedValue = true;
-        }
-        #endregion
     }
 }

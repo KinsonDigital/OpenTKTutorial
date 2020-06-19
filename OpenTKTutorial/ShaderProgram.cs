@@ -1,76 +1,72 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Text;
-using OpenToolkit.Graphics.OpenGL4;
+﻿// <copyright file="ShaderProgram.cs" company="KinsonDigital">
+// Copyright (c) KinsonDigital. All rights reserved.
+// </copyright>
 
 namespace OpenTKTutorial
 {
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Text;
+    using OpenToolkit.Graphics.OpenGL4;
+
     /// <summary>
     /// A shader program consisting of a vertex and fragment shader.
     /// </summary>
     public class ShaderProgram : IDisposable
     {
-        #region Private Fields
-        private readonly Dictionary<string, int> _uniformLocations = new Dictionary<string, int>();
-        private readonly int _batchSize;
-        private bool _disposedValue;
-        #endregion
+        private readonly Dictionary<string, int> uniformLocations = new Dictionary<string, int>();
+        private readonly int batchSize;
+        private bool disposedValue;
 
-
-        #region Constructors
         /// <summary>
-        /// Creates a new instance of <see cref="ShaderProgram"/>.
+        /// Initializes a new instance of the <see cref="ShaderProgram"/> class.
         /// </summary>
-        /// <param name="gl">Provides access to OpenGL funtionality.</param>
+        /// <param name="batchSize">The batch size that the shader will support.</param>
         /// <param name="vertexShaderPath">The path to the vertex shader code.</param>
         /// <param name="fragmentShaderPath">The path to the fragment shader code.</param>
         public ShaderProgram(int batchSize, string vertexShaderPath, string fragmentShaderPath)
         {
-            _batchSize = batchSize;
+            this.batchSize = batchSize;
 
             var shaderSource = LoadShaderData(vertexShaderPath);
             VertexShaderId = CreateShader(ShaderType.VertexShader, shaderSource);
 
-            //We do the same for the fragment shader
+            // We do the same for the fragment shader
             shaderSource = LoadShaderData(fragmentShaderPath);
             FragmentShaderId = CreateShader(ShaderType.FragmentShader, shaderSource);
 
-            //Merge both shaders into a shader program, which can then be used by OpenGL.
+            // Merge both shaders into a shader program, which can then be used by OpenGL.
             ProgramId = SetupShaderProgram(VertexShaderId, FragmentShaderId);
 
-            //When the shader program is linked, it no longer needs the individual shaders attacked to it.
-            //The compiled code is copied into the shader program.
-            //Detach and then delete them.
+            // When the shader program is linked, it no longer needs the individual shaders attacked to it.
+            // The compiled code is copied into the shader program.
+            // Detach and then delete them.
             DestroyShader(ProgramId, VertexShaderId);
             DestroyShader(ProgramId, FragmentShaderId);
 
-            //This is for the purpose of caching the locations of the uniforms.
-            //The reason is because GetUniformLocation() is a slow call.
-            //Get the number of active uniforms in the shader.
-            GL.GetProgram(ProgramId, GetProgramParameterName.ActiveUniforms, out int totalActiveUniforms);
+            // This is for the purpose of caching the locations of the uniforms.
+            // The reason is because GetUniformLocation() is a slow call.
+            // Get the number of active uniforms in the shader.
+            GL.GetProgram(ProgramId, GetProgramParameterName.ActiveUniforms, out var totalActiveUniforms);
 
-            //Loop over all the uniforms
+            // Loop over all the uniforms
             for (var i = 0; i < totalActiveUniforms; i++)
             {
-                //get the name of this uniform,
+                // get the name of this uniform,
                 var key = GL.GetActiveUniform(ProgramId, i, out _, out _);
 
-                //Get the location of the uniform on the GPU
+                // Get the location of the uniform on the GPU
                 var location = GL.GetUniformLocation(ProgramId, key);
 
                 if (location == -1)
                     throw new Exception($"The uniform with the name '{key}' does not exist.");
 
-                //Cache it
-                _uniformLocations.Add(key, location);
+                // Cache it
+                this.uniformLocations.Add(key, location);
             }
         }
-        #endregion
 
-
-        #region Props
         /// <summary>
         /// Gets the ID of the vertex shader.
         /// </summary>
@@ -85,72 +81,62 @@ namespace OpenTKTutorial
         /// Gets the shader program ID on the GPU.
         /// </summary>
         public int ProgramId { get; private set; }
-        #endregion
 
-
-        #region Public Methods
         /// <summary>
         /// Sets the active shader program to use on the GPU.
         /// </summary>
         public void UseProgram() => GL.UseProgram(ProgramId);
 
-
         /// <summary>
-        /// Disposes of the <see cref="ShaderProgram"/>.
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting
+        /// unmanaged resources.
         /// </summary>
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
-        #endregion
 
-
-        #region Protected Methods
         /// <summary>
-        /// Disposes of the internal resources if the given <paramref name="disposing"/> value is true.
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting
+        /// unmanaged resources.
         /// </summary>
-        /// <param name="disposing">True to dispose of internal resources.</param>
+        /// <param name="disposing">True if managed resources should be disposed of.</param>
         protected virtual void Dispose(bool disposing)
         {
-            if (_disposedValue)
+            if (this.disposedValue)
                 return;
 
-            //Dipose of managed resources
+            // Dipose of managed resources
             if (disposing)
-                _uniformLocations.Clear();
+                this.uniformLocations.Clear();
 
-            //Delete unmanaged resources
+            // Delete unmanaged resources
             GL.DeleteProgram(ProgramId);
 
-            _disposedValue = true;
+            this.disposedValue = true;
         }
-        #endregion
 
-
-        #region Private Methods
         /// <summary>
         /// Creates a shader program using the given vertex and fragment shader ID numbers.
         /// </summary>
         /// <param name="vertexShaderId">The ID of the vertex shader.</param>
         /// <param name="fragmentShaderId">The ID of the fragment shader.</param>
-        /// <returns></returns>
+        /// <returns>The shader program ID.</returns>
         private static int SetupShaderProgram(int vertexShaderId, int fragmentShaderId)
         {
             var programHandle = GL.CreateProgram();
 
-            //Attach both shaders...
+            // Attach both shaders...
             GL.AttachShader(programHandle, vertexShaderId);
 
             GL.AttachShader(programHandle, fragmentShaderId);
 
-            //Link them together
+            // Link them together
             LinkProgram(programHandle);
-
 
             return programHandle;
         }
-
 
         /// <summary>
         /// Links the program using the given <paramref name="shaderProgramId"/>.
@@ -162,17 +148,16 @@ namespace OpenTKTutorial
             GL.LinkProgram(shaderProgramId);
 
             // Check for linking errors
-            GL.GetProgram(shaderProgramId, GetProgramParameterName.LinkStatus, out int statusCode);
+            GL.GetProgram(shaderProgramId, GetProgramParameterName.LinkStatus, out var statusCode);
 
             if (statusCode != (int)All.True)
             {
                 // We can use `GL.GetProgramInfoLog(program)` to get information about the error.
+                _ = GL.GetProgramInfoLog(shaderProgramId);
 
-                var programInfo = GL.GetProgramInfoLog(shaderProgramId);
                 throw new Exception($"Error occurred while linking Program({shaderProgramId})");
             }
         }
-
 
         /// <summary>
         /// Creates a shader of the given <paramref name="shaderType"/> using the
@@ -180,7 +165,7 @@ namespace OpenTKTutorial
         /// </summary>
         /// <param name="shaderType">The type of shader to create.</param>
         /// <param name="shaderSrc">The shader source code to use for the shader program.</param>
-        /// <returns></returns>
+        /// <returns>The OpenGL shader ID.</returns>
         private static int CreateShader(ShaderType shaderType, string shaderSrc)
         {
             var shaderId = GL.CreateShader(shaderType);
@@ -189,10 +174,8 @@ namespace OpenTKTutorial
 
             CompileShader(shaderId);
 
-
             return shaderId;
         }
-
 
         /// <summary>
         /// Destroys the shaders.  Any shaders setup and sent to the GPU will still reside there.
@@ -205,7 +188,6 @@ namespace OpenTKTutorial
             GL.DeleteShader(shaderId);
         }
 
-
         /// <summary>
         /// Compiles the currently set shader source code on the GPU.
         /// </summary>
@@ -216,7 +198,7 @@ namespace OpenTKTutorial
             GL.CompileShader(shaderId);
 
             // Check for compilation errors
-            GL.GetShader(shaderId, ShaderParameter.CompileStatus, out int statusCode);
+            GL.GetShader(shaderId, ShaderParameter.CompileStatus, out var statusCode);
 
             if (statusCode != (int)All.True)
             {
@@ -226,15 +208,14 @@ namespace OpenTKTutorial
             }
         }
 
-
         private string LoadShaderData(string shaderFilePath)
         {
-            //Load the source code from the shader files
+            // Load the source code from the shader files
             var result = new StringBuilder();
 
             using (var reader = new StreamReader(shaderFilePath, Encoding.UTF8))
             {
-                while(!reader.EndOfStream)
+                while (!reader.EndOfStream)
                 {
                     var line = reader.ReadLine();
 
@@ -244,26 +225,24 @@ namespace OpenTKTutorial
                 }
             }
 
-
             return result.ToString();
         }
-
 
         private string ProcessLine(string line)
         {
             var result = string.Empty;
 
-            //If the line of code has a replacement tag on it
-            if (line.Contains("//$REPLACE_INDEX"))
+            // If the line of code has a replacement tag on it
+            if (line.Contains("//$REPLACE_INDEX", StringComparison.Ordinal))
             {
                 var sections = line.Split(' ');
 
-                //Find the section with the array brackets
-                for (int i = 0; i < sections.Length; i++)
+                // Find the section with the array brackets
+                for (var i = 0; i < sections.Length; i++)
                 {
                     if (sections[i].Contains('[', StringComparison.Ordinal) && sections[i].Contains(']', StringComparison.Ordinal))
                     {
-                        result += $"{sections[i].Split('[')[0]}[{_batchSize}];//MODIFIED_DURING_COMPILE_TIME";
+                        result += $"{sections[i].Split('[')[0]}[{this.batchSize}];//MODIFIED_DURING_COMPILE_TIME";
                     }
                     else
                     {
@@ -276,9 +255,7 @@ namespace OpenTKTutorial
                 result = line;
             }
 
-
             return result;
         }
-        #endregion
     }
 }

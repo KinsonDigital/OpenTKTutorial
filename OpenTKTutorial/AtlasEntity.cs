@@ -1,16 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Text;
+﻿// <copyright file="AtlasEntity.cs" company="KinsonDigital">
+// Copyright (c) KinsonDigital. All rights reserved.
+// </copyright>
 
 namespace OpenTKTutorial
 {
     public class AtlasEntity : Entity
     {
-        public AtlasEntity(int atlasTextureID, AtlasSubRect atlasSubRect) : base(atlasTextureID)
-        {
-            AtlasSubRect = atlasSubRect;
-        }
+        public AtlasEntity(int atlasTextureID, AtlasSubRect atlasSubRect)
+            : base(atlasTextureID)
+            => AtlasSubRect = atlasSubRect;
 
         public AtlasSubRect AtlasSubRect { get; private set; }
     }

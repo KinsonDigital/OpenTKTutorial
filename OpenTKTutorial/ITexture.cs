@@ -1,25 +1,23 @@
-﻿using System;
+﻿// <copyright file="ITexture.cs" company="KinsonDigital">
+// Copyright (c) KinsonDigital. All rights reserved.
+// </copyright>
 
 namespace OpenTKTutorial
 {
+    using System;
+
     public interface ITexture : IDisposable
     {
-        #region Props
         int ID { get; }
 
-        string Name { get;  }
+        string Name { get; }
 
         int Width { get; }
 
         int Height { get; }
-        #endregion
 
-
-        #region Methods
         void Bind();
 
-
         void Unbind();
-        #endregion
     }
 }

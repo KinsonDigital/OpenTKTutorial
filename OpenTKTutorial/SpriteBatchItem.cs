@@ -1,7 +1,11 @@
-﻿using System.Drawing;
+﻿// <copyright file="SpriteBatchItem.cs" company="KinsonDigital">
+// Copyright (c) KinsonDigital. All rights reserved.
+// </copyright>
 
 namespace OpenTKTutorial
 {
+    using System.Drawing;
+
     internal struct SpriteBatchItem
     {
         public int TextureID;
@@ -16,21 +20,13 @@ namespace OpenTKTutorial
 
         public Color TintColor;
 
-
-        public bool IsEmpty
-        {
-            get
-            {
-                return TextureID == -1 &&
-                    SrcRect.IsEmpty &&
-                    DestRect.IsEmpty &&
-                    Size == 0f &&
-                    Angle == 0f &&
-                    TintColor.IsEmpty;
-            }
-        }
-
-
         public static SpriteBatchItem Empty => new SpriteBatchItem() { TextureID = -1 };
+
+        public bool IsEmpty => this.TextureID == -1 &&
+                    this.SrcRect.IsEmpty &&
+                    this.DestRect.IsEmpty &&
+                    this.Size == 0f &&
+                    this.Angle == 0f &&
+                    this.TintColor.IsEmpty;
     }
 }

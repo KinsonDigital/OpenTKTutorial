@@ -1,20 +1,21 @@
-﻿using OpenToolkit.Mathematics;
-using OpenToolkit.Windowing.Desktop;
+﻿// <copyright file="Program.cs" company="KinsonDigital">
+// Copyright (c) KinsonDigital. All rights reserved.
+// </copyright>
 
 namespace OpenTKTutorial
 {
-    class Program
-    {
-        private static int _indexBufferID;
-        private static int _vertexBufferID;
-        private static int _vertexArrayID;
+    using OpenToolkit.Mathematics;
+    using OpenToolkit.Windowing.Desktop;
 
-        static void Main(string[] args)
+    public static class Program
+    {
+        public static void Main()
         {
             var gameWinSettings = new GameWindowSettings();
-            var nativeWinSettings = new NativeWindowSettings();
-            nativeWinSettings.Size = new Vector2i(1020, 800);
-
+            var nativeWinSettings = new NativeWindowSettings
+            {
+                Size = new Vector2i(1020, 800),
+            };
 
             var game = new Game(gameWinSettings, nativeWinSettings);
 
