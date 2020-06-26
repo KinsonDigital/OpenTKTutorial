@@ -24,7 +24,7 @@ namespace OpenTKTutorial
         private bool hasBegun;
         private int currentBatchItem = 0;
         private int previousTextureID = -1;
-        private bool firstRender;
+        private bool firstRenderMethodInvoke = true;
 
         public SpriteBatch(int renderSurfaceWidth, int renderSurfaceHeight)
         {
@@ -68,13 +68,13 @@ namespace OpenTKTutorial
             if (!this.hasBegun)
                 throw new Exception("Must call begin() first");
 
-            bool HasSwitchedTexture() => texture.ID != this.previousTextureID && !this.firstRender;
+            bool textureHasChanged = texture.ID != (this.firstRenderMethodInvoke ? texture.ID : this.previousTextureID);
 
             // var totalBatchItems = _batchItems.Count(i => !i.Value.IsEmpty);
-            var totalBatchItems = this.batchItems.Values.ToArray().CountKD<SpriteBatchItem>(i => !i.IsEmpty);
+            var batchIsFull = this.batchItems.Values.ToArray().All(i => !i.IsEmpty);
 
             // Has the textures switched
-            if (HasSwitchedTexture() || totalBatchItems >= this.maxBatchSize)
+            if (textureHasChanged || batchIsFull)
             {
                 RenderBatch();
                 this.currentBatchItem = 0;
@@ -95,7 +95,7 @@ namespace OpenTKTutorial
 
             this.currentBatchItem += 1;
             this.previousTextureID = texture.ID;
-            this.firstRender = true;
+            this.firstRenderMethodInvoke = false;
         }
 
         public void End()
@@ -106,7 +106,6 @@ namespace OpenTKTutorial
             RenderBatch();
             this.currentBatchItem = 0;
             this.previousTextureID = 0;
-            this.hasBegun = false;
         }
 
         /// <summary>
@@ -167,8 +166,6 @@ namespace OpenTKTutorial
                     this.batchItems[i].DestRect.Width,
                     this.batchItems[i].DestRect.Height,
                     this.batchItems[i].TintColor);
-
-                batchAmountToRender += 1;
             }
 
             // Only render the amount of elements for the amount of batch items to render.
@@ -177,6 +174,7 @@ namespace OpenTKTutorial
                 GL.DrawElements(PrimitiveType.Triangles, 6 * batchAmountToRender, DrawElementsType.UnsignedInt, IntPtr.Zero);
 
             EmptyBatchItems();
+            this.firstRenderMethodInvoke = true;
         }
 
         private void EmptyBatchItems()

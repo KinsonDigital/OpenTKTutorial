@@ -29,6 +29,7 @@ namespace OpenTKTutorial
         private readonly int totalEntities = 10;
         private bool isShuttingDown;
         private double elapsedTime;
+        private int backgroundTextureID;
 
         // TODO: Need to finish the custom batching process including setting the total batch size in the shaders
         // TODO: Need to add color to the vertex buffer and update its data
@@ -49,10 +50,10 @@ namespace OpenTKTutorial
 
             var backgroundTexture = ContentLoader.CreateTexture("dungeon.png");
             this.texturePool.Add(backgroundTexture.ID, backgroundTexture);
+            this.backgroundTextureID = backgroundTexture.ID;
 
             var mainAtlasTexture = ContentLoader.CreateTexture("main-atlas.png");
             this.texturePool.Add(mainAtlasTexture.ID, mainAtlasTexture);
-
             this.atlasID = mainAtlasTexture.ID;
 
             // Load the atlas sub rectangle data
@@ -75,6 +76,8 @@ namespace OpenTKTutorial
                 this.linkEntities.Add(newEntity);
             }
         }
+
+        public Vector2 ScreenCenter => new Vector2(this.Size.X / 2f, this.Size.Y / 2);
 
         protected override void OnLoad()
         {
@@ -151,6 +154,25 @@ namespace OpenTKTutorial
         private void Render()
         {
             this.spriteBatch.Begin();
+
+            var backgroundTexture = this.texturePool[this.backgroundTextureID];
+            var backgroundSrcRect = new Rectangle()
+            {
+                X = 0,
+                Y = 0,
+                Width = this.texturePool[this.backgroundTextureID].Width,
+                Height = this.texturePool[this.backgroundTextureID].Height,
+            };
+
+            var backgroundDestRect = new Rectangle()
+            {
+                X = (int)ScreenCenter.X,
+                Y = (int)ScreenCenter.Y,
+                Width = this.texturePool[this.backgroundTextureID].Width,
+                Height = this.texturePool[this.backgroundTextureID].Height,
+            };
+
+            this.spriteBatch.Render(backgroundTexture, backgroundSrcRect, backgroundDestRect, 1, 0, NETColor.White);
 
             var atlasTexture = this.texturePool[this.atlasID];
 
