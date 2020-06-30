@@ -4,24 +4,15 @@
 
 namespace OpenTKTutorial
 {
-    using OpenToolkit.Mathematics;
-    using OpenToolkit.Windowing.Desktop;
+    using System.Numerics;
 
     public static class Program
     {
         public static void Main()
         {
-            var gameWinSettings = new GameWindowSettings();
-            var nativeWinSettings = new NativeWindowSettings
-            {
-                Size = new Vector2i(1020, 800),
-            };
-
-            var game = new Game(gameWinSettings, nativeWinSettings);
+            var game = new Game();
 
             game.Run();
-
-            game.Dispose();
         }
     }
 }

@@ -5,7 +5,7 @@
 namespace OpenTKTutorial
 {
     using System.Drawing;
-    using OpenToolkit.Mathematics;
+    using System.Numerics;
 
     /// <summary>
     /// A basic entity.

@@ -6,15 +6,17 @@ namespace OpenTKTutorial
 {
     using System;
     using System.IO;
-    using OpenToolkit.Graphics.OpenGL4;
+    using Silk.NET.OpenGL;
 
     public class Texture : ITexture
     {
         private bool disposedValue = false;
+        private GL GL;
 
-        public Texture(byte[] pixelData, int width, int height, string name)
+        public Texture(GL gl, byte[] pixelData, uint width, uint height, string name)
         {
-            ID = GL.GenTexture();
+            this.GL = gl;
+            ID = this.GL.GenTexture();
 
             Bind();
 
@@ -28,15 +30,15 @@ namespace OpenTKTutorial
             Unbind();
         }
 
-        public int ID { get; protected set; }
+        public uint ID { get; protected set; }
 
         public string Name { get; private set; }
 
-        public int Width { get; protected set; }
+        public uint Width { get; protected set; }
 
-        public int Height { get; protected set; }
+        public uint Height { get; protected set; }
 
-        public void Bind() => GL.BindTexture(TextureTarget.Texture2D, ID);
+        public void Bind() => this.GL.BindTexture(TextureTarget.Texture2D, ID);
 
         public void Unbind()
         {
@@ -68,25 +70,29 @@ namespace OpenTKTutorial
             // manually for anything using these objects where they contain GL calls in there
             // Dispose() methods
             Unbind();
-            GL.DeleteTexture(ID);
+            this.GL.DeleteTexture(ID);
 
             this.disposedValue = true;
         }
 
-        private void UploadDataToGPU(byte[] pixelData, int width, int height, string name)
+        private unsafe void UploadDataToGPU(byte[] pixelData, uint width, uint height, string name)
         {
-            GL.ObjectLabel(ObjectLabelIdentifier.Texture, ID, -1, Path.GetFileName(name));
+            this.GL.ObjectLabel(ObjectIdentifier.Texture, ID, 0, Path.GetFileName(name));
 
             // Set the min and mag filters to linear
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+            this.GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+            this.GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
 
             // Sett the x(S) and y(T) axis wrap mode to repeat
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
+            this.GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
+            this.GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
 
             // Load the texture data to the GPU for the currently active texture slot
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, pixelData);
+
+            fixed (byte* pixelPtr = pixelData)
+            {
+                this.GL.TexImage2D(TextureTarget.Texture2D, 0, (int)PixelFormat.Rgba, width, height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, pixelPtr);
+            }
         }
     }
 }

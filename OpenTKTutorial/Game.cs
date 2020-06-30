@@ -8,52 +8,65 @@ namespace OpenTKTutorial
     using System.Collections.Generic;
     using System.ComponentModel;
     using System.Drawing;
+    using System.Numerics;
     using System.Runtime.InteropServices;
-    using OpenToolkit.Graphics.OpenGL4;
-    using OpenToolkit.Mathematics;
-    using OpenToolkit.Windowing.Common;
-    using OpenToolkit.Windowing.Common.Input;
-    using OpenToolkit.Windowing.Desktop;
+    using Silk.NET.OpenGL;
+    using Silk.NET.Windowing;
+    using Silk.NET.Windowing.Common;
     using NETColor = System.Drawing.Color;
 
     /// <summary>
     /// The main game window.
     /// </summary>
-    public class Game : GameWindow
+    public class Game
     {
-        private readonly SpriteBatch spriteBatch;
-        private readonly Dictionary<int, ITexture> texturePool = new Dictionary<int, ITexture>();
+        private SpriteBatch spriteBatch;
+        private readonly Dictionary<uint, ITexture> texturePool = new Dictionary<uint, ITexture>();
         private readonly List<AtlasEntity> linkEntities = new List<AtlasEntity>();
         private readonly int atlasID;
-        private readonly int linkTextureID;
-        private readonly Dictionary<string, AtlasSubRect> atlasSubRects;
+        private uint linkTextureID;
+        private Dictionary<string, AtlasSubRect> atlasSubRects;
         private readonly int totalEntities = 10;
         private bool isShuttingDown;
         private double elapsedTime;
-        private int backgroundTextureID;
+        private uint backgroundTextureID;
+        private GL gl;
+        private IWindow window;
+
 
         // TODO: Need to finish the custom batching process including setting the total batch size in the shaders
         // TODO: Need to add color to the vertex buffer and update its data
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1303:Do not pass literals as localized parameters", Justification = "Exception message only used inside method.")]
-        public Game(GameWindowSettings gameWindowSettings, NativeWindowSettings nativeWindowSettings)
-            : base(gameWindowSettings, nativeWindowSettings)
+        public unsafe Game()
         {
-            if (nativeWindowSettings is null)
-                throw new ArgumentNullException(nameof(nativeWindowSettings), "The argument must not be null");
+            this.window = Window.Create(WindowOptions.Default);
+            this.window.Load += Window_Load;
+            this.window.Update += Window_Update;
+            this.window.Render += Window_Render;
+            this.window.Resize += Window_Resize;
+            this.window.Closing += Window_Closing;
+        }
 
-            var name = "Hello World";
+        public void Run()
+        {
+            this.window.Run();
+        }
 
-            GL.Enable(EnableCap.DebugOutput);
-            GL.Enable(EnableCap.DebugOutputSynchronous);
-            GL.DebugMessageCallback(DebugCallback, Marshal.StringToHGlobalAnsi(name));
+        private unsafe void Window_Load()
+        {
+            this.gl = GL.GetApi(this.window);
 
-            this.spriteBatch = new SpriteBatch(nativeWindowSettings.Size.X, nativeWindowSettings.Size.Y);
+            this.gl.Enable(EnableCap.DebugOutput);
+            this.gl.Enable(EnableCap.DebugOutputSynchronous);
+            this.gl.DebugMessageCallback(DebugCallback, null);
 
-            var backgroundTexture = ContentLoader.CreateTexture("dungeon.png");
+            this.spriteBatch = new SpriteBatch(this.gl, 1020, 800);
+
+            var backgroundTexture = ContentLoader.CreateTexture(this.gl, "dungeon.png");
             this.texturePool.Add(backgroundTexture.ID, backgroundTexture);
             this.backgroundTextureID = backgroundTexture.ID;
 
-            var linkTexture = ContentLoader.CreateTexture("link.png");
+            var linkTexture = ContentLoader.CreateTexture(this.gl, "link.png");
             this.texturePool.Add(linkTexture.ID, linkTexture);
             this.linkTextureID = linkTexture.ID;
 
@@ -82,13 +95,12 @@ namespace OpenTKTutorial
             //}
         }
 
-        public Vector2 ScreenCenter => new Vector2(this.Size.X / 2f, this.Size.Y / 2);
-
-        protected override void OnLoad()
+        private void Window_Resize(Size obj)
         {
+            this.gl.Viewport(obj);
         }
 
-        protected override void OnUpdateFrame(FrameEventArgs args)
+        private void Window_Update(double obj)
         {
             if (this.isShuttingDown)
                 return;
@@ -122,38 +134,24 @@ namespace OpenTKTutorial
             //this.elapsedTime = this.elapsedTime * 1000 > totalTime
             //    ? 0
             //    : this.elapsedTime += args.Time;
-
-            base.OnUpdateFrame(args);
         }
 
-        protected override void OnRenderFrame(FrameEventArgs args)
+        private void Window_Render(double obj)
         {
             if (this.isShuttingDown)
                 return;
 
-            GL.Clear(ClearBufferMask.ColorBufferBit);
+            this.gl.Clear((uint)ClearBufferMask.ColorBufferBit);
 
             Render();
-
-            SwapBuffers();
-
-            base.OnRenderFrame(args);
         }
 
-        protected override void OnResize(ResizeEventArgs e)
-        {
-            // TODO: Setup renderer to updates its render surface width and height
-            GL.Viewport(0, 0, Size.X, Size.Y);
+        public Vector2 ScreenCenter => new Vector2(1020 / 2f, 800 / 2);
 
-            base.OnResize(e);
-        }
 
-        protected override void OnClosing(CancelEventArgs e) => base.OnClosing(e);
-
-        protected override void OnUnload()
+        private void Window_Closing()
         {
             this.isShuttingDown = true;
-            base.OnUnload();
         }
 
         private void Render()
@@ -165,16 +163,16 @@ namespace OpenTKTutorial
             {
                 X = 0,
                 Y = 0,
-                Width = this.texturePool[this.backgroundTextureID].Width,
-                Height = this.texturePool[this.backgroundTextureID].Height,
+                Width = (int)this.texturePool[this.backgroundTextureID].Width,
+                Height = (int)this.texturePool[this.backgroundTextureID].Height,
             };
 
             var backgroundDestRect = new Rectangle()
             {
                 X = (int)ScreenCenter.X,
                 Y = (int)ScreenCenter.Y,
-                Width = this.texturePool[this.backgroundTextureID].Width,
-                Height = this.texturePool[this.backgroundTextureID].Height,
+                Width = (int)this.texturePool[this.backgroundTextureID].Width,
+                Height = (int)this.texturePool[this.backgroundTextureID].Height,
             };
 
             this.spriteBatch.Render(backgroundTexture, backgroundSrcRect, backgroundDestRect, 1, 0, NETColor.White);
@@ -185,16 +183,16 @@ namespace OpenTKTutorial
             {
                 X = 0,
                 Y = 0,
-                Width = this.texturePool[this.linkTextureID].Width,
-                Height = this.texturePool[this.linkTextureID].Height,
+                Width = (int)this.texturePool[this.linkTextureID].Width,
+                Height = (int)this.texturePool[this.linkTextureID].Height,
             };
 
             var linkDestRect = new Rectangle()
             {
                 X = 400,
                 Y = 400,
-                Width = this.texturePool[this.linkTextureID].Width,
-                Height = this.texturePool[this.linkTextureID].Height,
+                Width = (int)this.texturePool[this.linkTextureID].Width,
+                Height = (int)this.texturePool[this.linkTextureID].Height,
             };
 
             this.spriteBatch.Render(linkTexture, linkSrcRect, linkDestRect, 1, 0, NETColor.White);
@@ -218,7 +216,7 @@ namespace OpenTKTutorial
             this.spriteBatch.End();
         }
 
-        private void DebugCallback(DebugSource src, DebugType type, int id, DebugSeverity severity, int length, IntPtr message, IntPtr userParam)
+        private void DebugCallback(GLEnum src, GLEnum type, int id, GLEnum severity, int length, IntPtr message, IntPtr userParam)
         {
             var errorMessage = Marshal.PtrToStringAnsi(message);
 
@@ -230,7 +228,7 @@ namespace OpenTKTutorial
             errorMessage += $"\n\tLength: {length}";
             errorMessage += $"\n\tUser Param: {Marshal.PtrToStringAnsi(userParam)}";
 
-            if (severity != DebugSeverity.DebugSeverityNotification)
+            if (severity != GLEnum.DebugSeverityNotification)
             {
                 throw new Exception(errorMessage);
             }

@@ -8,7 +8,7 @@ namespace OpenTKTutorial
     using System.Collections.Generic;
     using System.IO;
     using System.Text;
-    using OpenToolkit.Graphics.OpenGL4;
+    using Silk.NET.OpenGL;
 
     /// <summary>
     /// A shader program consisting of a vertex and fragment shader.
@@ -16,6 +16,7 @@ namespace OpenTKTutorial
     public class ShaderProgram : IDisposable
     {
         private readonly Dictionary<string, int> uniformLocations = new Dictionary<string, int>();
+        private readonly GL GL;
         private readonly int batchSize;
         private bool disposedValue;
 
@@ -25,8 +26,9 @@ namespace OpenTKTutorial
         /// <param name="batchSize">The batch size that the shader will support.</param>
         /// <param name="vertexShaderPath">The path to the vertex shader code.</param>
         /// <param name="fragmentShaderPath">The path to the fragment shader code.</param>
-        public ShaderProgram(int batchSize, string vertexShaderPath, string fragmentShaderPath)
+        public ShaderProgram(GL gl, int batchSize, string vertexShaderPath, string fragmentShaderPath)
         {
+            this.GL = gl;
             this.batchSize = batchSize;
 
             var shaderSource = LoadShaderData(vertexShaderPath);
@@ -48,16 +50,16 @@ namespace OpenTKTutorial
             // This is for the purpose of caching the locations of the uniforms.
             // The reason is because GetUniformLocation() is a slow call.
             // Get the number of active uniforms in the shader.
-            GL.GetProgram(ProgramId, GetProgramParameterName.ActiveUniforms, out var totalActiveUniforms);
+            this.GL.GetProgram(ProgramId, ProgramPropertyARB.ActiveUniforms, out var totalActiveUniforms);
 
             // Loop over all the uniforms
-            for (var i = 0; i < totalActiveUniforms; i++)
+            for (uint i = 0; i < totalActiveUniforms; i++)
             {
                 // get the name of this uniform,
-                var key = GL.GetActiveUniform(ProgramId, i, out _, out _);
+                var key = this.GL.GetActiveUniform(ProgramId, i, out _, out _);
 
                 // Get the location of the uniform on the GPU
-                var location = GL.GetUniformLocation(ProgramId, key);
+                var location = this.GL.GetUniformLocation(ProgramId, key);
 
                 if (location == -1)
                     throw new Exception($"The uniform with the name '{key}' does not exist.");
@@ -70,22 +72,22 @@ namespace OpenTKTutorial
         /// <summary>
         /// Gets the ID of the vertex shader.
         /// </summary>
-        public int VertexShaderId { get; private set; }
+        public uint VertexShaderId { get; private set; }
 
         /// <summary>
         /// Gets the ID of the fragment shader on the GPU.
         /// </summary>
-        public int FragmentShaderId { get; private set; }
+        public uint FragmentShaderId { get; private set; }
 
         /// <summary>
         /// Gets the shader program ID on the GPU.
         /// </summary>
-        public int ProgramId { get; private set; }
+        public uint ProgramId { get; private set; }
 
         /// <summary>
         /// Sets the active shader program to use on the GPU.
         /// </summary>
-        public void UseProgram() => GL.UseProgram(ProgramId);
+        public void UseProgram() => this.GL.UseProgram(ProgramId);
 
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting
@@ -112,7 +114,7 @@ namespace OpenTKTutorial
                 this.uniformLocations.Clear();
 
             // Delete unmanaged resources
-            GL.DeleteProgram(ProgramId);
+            this.GL.DeleteProgram(ProgramId);
 
             this.disposedValue = true;
         }
@@ -123,14 +125,14 @@ namespace OpenTKTutorial
         /// <param name="vertexShaderId">The ID of the vertex shader.</param>
         /// <param name="fragmentShaderId">The ID of the fragment shader.</param>
         /// <returns>The shader program ID.</returns>
-        private static int SetupShaderProgram(int vertexShaderId, int fragmentShaderId)
+        private uint SetupShaderProgram(uint vertexShaderId, uint fragmentShaderId)
         {
-            var programHandle = GL.CreateProgram();
+            var programHandle = this.GL.CreateProgram();
 
             // Attach both shaders...
-            GL.AttachShader(programHandle, vertexShaderId);
+            this.GL.AttachShader(programHandle, vertexShaderId);
 
-            GL.AttachShader(programHandle, fragmentShaderId);
+            this.GL.AttachShader(programHandle, fragmentShaderId);
 
             // Link them together
             LinkProgram(programHandle);
@@ -142,18 +144,18 @@ namespace OpenTKTutorial
         /// Links the program using the given <paramref name="shaderProgramId"/>.
         /// </summary>
         /// <param name="shaderProgramId">The ID of the shader program.</param>
-        private static void LinkProgram(int shaderProgramId)
+        private void LinkProgram(uint shaderProgramId)
         {
             // We link the program
-            GL.LinkProgram(shaderProgramId);
+            this.GL.LinkProgram(shaderProgramId);
 
             // Check for linking errors
-            GL.GetProgram(shaderProgramId, GetProgramParameterName.LinkStatus, out var statusCode);
+            this.GL.GetProgram(shaderProgramId, ProgramPropertyARB.LinkStatus, out var statusCode);
 
-            if (statusCode != (int)All.True)
+            if (statusCode != 1)
             {
                 // We can use `GL.GetProgramInfoLog(program)` to get information about the error.
-                _ = GL.GetProgramInfoLog(shaderProgramId);
+                _ = this.GL.GetProgramInfoLog(shaderProgramId);
 
                 throw new Exception($"Error occurred while linking Program({shaderProgramId})");
             }
@@ -166,11 +168,11 @@ namespace OpenTKTutorial
         /// <param name="shaderType">The type of shader to create.</param>
         /// <param name="shaderSrc">The shader source code to use for the shader program.</param>
         /// <returns>The OpenGL shader ID.</returns>
-        private static int CreateShader(ShaderType shaderType, string shaderSrc)
+        private uint CreateShader(ShaderType shaderType, string shaderSrc)
         {
-            var shaderId = GL.CreateShader(shaderType);
+            var shaderId = this.GL.CreateShader(shaderType);
 
-            GL.ShaderSource(shaderId, shaderSrc);
+            this.GL.ShaderSource(shaderId, shaderSrc);
 
             CompileShader(shaderId);
 
@@ -182,27 +184,27 @@ namespace OpenTKTutorial
         /// </summary>
         /// <param name="shaderProgramId">The program ID of the shader.</param>
         /// <param name="shaderId">The shader ID of the shader.</param>
-        private static void DestroyShader(int shaderProgramId, int shaderId)
+        private void DestroyShader(uint shaderProgramId, uint shaderId)
         {
-            GL.DetachShader(shaderProgramId, shaderId);
-            GL.DeleteShader(shaderId);
+            this.GL.DetachShader(shaderProgramId, shaderId);
+            this.GL.DeleteShader(shaderId);
         }
 
         /// <summary>
         /// Compiles the currently set shader source code on the GPU.
         /// </summary>
         /// <param name="shaderId">The shader ID.</param>
-        private static void CompileShader(int shaderId)
+        private void CompileShader(uint shaderId)
         {
             // Try to compile the shader
-            GL.CompileShader(shaderId);
+            this.GL.CompileShader(shaderId);
 
             // Check for compilation errors
-            GL.GetShader(shaderId, ShaderParameter.CompileStatus, out var statusCode);
+            this.GL.GetShader(shaderId, ShaderParameterName.CompileStatus, out var statusCode);
 
-            if (statusCode != (int)All.True)
+            if (statusCode != 1)
             {
-                var errorInfo = GL.GetShaderInfoLog(shaderId);
+                var errorInfo = this.GL.GetShaderInfoLog(shaderId);
 
                 throw new Exception($"Error occurred while compiling Shader({shaderId})\n{errorInfo}");
             }

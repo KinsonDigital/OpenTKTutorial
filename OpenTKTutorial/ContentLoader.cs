@@ -9,6 +9,7 @@ namespace OpenTKTutorial
     using System.IO;
     using System.Reflection;
     using System.Text.Json;
+    using Silk.NET.OpenGL;
     using SixLabors.ImageSharp;
     using SixLabors.ImageSharp.PixelFormats;
     using SixLabors.ImageSharp.Processing;
@@ -17,7 +18,7 @@ namespace OpenTKTutorial
     {
         private static readonly string AppPathDir = $@"{Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)}\";
 
-        public static ITexture[] CreateTextures(string fileName, uint count)
+        public static ITexture[] CreateTextures(GL gl, string fileName, uint count)
         {
             var contentDir = $@"{AppPathDir}Content\";
             var graphicsContent = $@"{contentDir}Graphics\";
@@ -28,15 +29,15 @@ namespace OpenTKTutorial
 
             for (var i = 0; i < count; i++)
             {
-                result.Add(new Texture(pixelData, width, height, $"{Path.GetFileNameWithoutExtension(fileName)}-{i}"));
+                result.Add(new Texture(gl, pixelData, (uint)width, (uint)height, $"{Path.GetFileNameWithoutExtension(fileName)}-{i}"));
             }
 
             return result.ToArray();
         }
 
-        public static ITexture CreateTexture(string fileName)
+        public static ITexture CreateTexture(GL gl, string fileName)
         {
-            var textures = CreateTextures(fileName, 1);
+            var textures = CreateTextures(gl, fileName, 1);
 
             return textures[0];
         }

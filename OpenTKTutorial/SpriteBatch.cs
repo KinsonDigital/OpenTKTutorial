@@ -8,8 +8,8 @@ namespace OpenTKTutorial
     using System.Collections.Generic;
     using System.Drawing;
     using System.Linq;
-    using OpenToolkit.Graphics.OpenGL4;
-    using OpenToolkit.Mathematics;
+    using System.Numerics;
+    using Silk.NET.OpenGL;
 
     public class SpriteBatch : IDisposable
     {
@@ -18,18 +18,20 @@ namespace OpenTKTutorial
         private readonly GPUBuffer<VertexData> gpuBuffer;
         private readonly int transDataLocation;
         private readonly Dictionary<int, SpriteBatchItem> batchItems = new Dictionary<int, SpriteBatchItem>();
+        private readonly GL GL;
         private readonly ShaderProgram shader;
         private readonly int maxBatchSize = 2;
         private bool disposedValue = false;
         private bool hasBegun;
         private int currentBatchItem = 0;
-        private int previousTextureID = -1;
+        private uint previousTextureID = 0;
         private bool firstRenderMethodInvoke = true;
-        private int currentTextureID;
+        private uint currentTextureID;
 
-        public SpriteBatch(int renderSurfaceWidth, int renderSurfaceHeight)
+        public SpriteBatch(GL gl, int renderSurfaceWidth, int renderSurfaceHeight)
         {
-            this.shader = new ShaderProgram(this.maxBatchSize, "shader.vert", "shader.frag");
+            this.GL = gl;
+            this.shader = new ShaderProgram(gl, this.maxBatchSize, "shader.vert", "shader.frag");
 
             for (var i = 0; i < this.maxBatchSize; i++)
             {
@@ -39,17 +41,17 @@ namespace OpenTKTutorial
             this.renderSurfaceWidth = renderSurfaceWidth;
             this.renderSurfaceHeight = renderSurfaceHeight;
 
-            GL.Enable(EnableCap.Blend);
-            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-            GL.ClearColor(0.2f, 0.3f, 0.3f, 1.0f); // TODO: Allow changing of this
+            this.GL.Enable(EnableCap.Blend);
+            this.GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            this.GL.ClearColor(0.2f, 0.3f, 0.3f, 1.0f); // TODO: Allow changing of this
 
-            GL.ActiveTexture(TextureUnit.Texture0);
+            this.GL.ActiveTexture(TextureUnit.Texture0);
 
             this.shader.UseProgram();
 
-            this.gpuBuffer = new GPUBuffer<VertexData>(this.maxBatchSize);
+            this.gpuBuffer = new GPUBuffer<VertexData>(this.GL, this.maxBatchSize);
 
-            this.transDataLocation = GL.GetUniformLocation(this.shader.ProgramId, "uTransform");
+            this.transDataLocation = this.GL.GetUniformLocation(this.shader.ProgramId, "uTransform");
         }
 
         public void Begin() => this.hasBegun = true;
@@ -144,16 +146,16 @@ namespace OpenTKTutorial
             this.disposedValue = true;
         }
 
-        private void RenderBatch()
+        private unsafe void RenderBatch()
         {
-            var batchAmountToRender = this.batchItems.Count(i => !i.Value.IsEmpty);
+            var batchAmountToRender = (uint)this.batchItems.Count(i => !i.Value.IsEmpty);
 
             for (var i = 0; i < this.batchItems.Values.Count; i++)
             {
                 if (this.batchItems[i].IsEmpty)
                     continue;
 
-                GL.BindTexture(TextureTarget.Texture2D, this.batchItems[i].TextureID);
+                this.GL.BindTexture(TextureTarget.Texture2D, this.batchItems[i].TextureID);
 
                 UpdateGPUTransform(
                     i,
@@ -175,7 +177,9 @@ namespace OpenTKTutorial
             // Only render the amount of elements for the amount of batch items to render.
             // 6 = the number of vertices/quad and each batch is a quad. batchAmontToRender is the total quads to render
             if (batchAmountToRender > 0)
-                GL.DrawElements(PrimitiveType.Triangles, 6 * batchAmountToRender, DrawElementsType.UnsignedInt, IntPtr.Zero);
+            {
+                this.GL.DrawElements(PrimitiveType.Triangles, 6 * batchAmountToRender, DrawElementsType.UnsignedInt, IntPtr.Zero.ToPointer());
+            }
 
             // Empty the batch items
             for (var i = 0; i < this.batchItems.Count; i++)
@@ -184,7 +188,7 @@ namespace OpenTKTutorial
             }
         }
 
-        private void UpdateGPUTransform(int quadID, float x, float y, int width, int height, float size, float angle)
+        private unsafe void UpdateGPUTransform(int quadID, float x, float y, int width, int height, float size, float angle)
         {
             // Create and send the transformation data to the GPU
             var transMatrix = BuildTransformationMatrix(
@@ -195,7 +199,7 @@ namespace OpenTKTutorial
                 size,
                 angle);
 
-            GL.UniformMatrix4(this.transDataLocation + quadID, true, ref transMatrix);
+            this.GL.UniformMatrix4(this.transDataLocation + quadID, 1, true, (float*)&transMatrix);
         }
 
         /// <summary>
@@ -207,7 +211,7 @@ namespace OpenTKTutorial
         /// <param name="height">The height of a texture.</param>
         /// <param name="size">The size of a texture. 1 represents normal size and 1.5 represents 150%.</param>
         /// <param name="angle">The angle of the texture.</param>
-        private Matrix4 BuildTransformationMatrix(float x, float y, int width, int height, float size, float angle)
+        private Matrix4x4 BuildTransformationMatrix(float x, float y, int width, int height, float size, float angle)
         {
             var scaleX = (float)width / this.renderSurfaceWidth;
             var scaleY = (float)height / this.renderSurfaceHeight;
@@ -219,14 +223,14 @@ namespace OpenTKTutorial
             var ndcY = y.MapValue(0f, this.renderSurfaceHeight, 1f, -1f);
 
             // NOTE: (+ degrees) rotates CCW and (- degress) rotates CW
-            var angleRadians = MathHelper.DegreesToRadians(angle);
+            var angleRadians = angle.ToRadians();
 
             // Invert angle to rotate CW instead of CCW
             angleRadians *= -1;
 
-            var rotation = Matrix4.CreateRotationZ(angleRadians);
-            var scaleMatrix = Matrix4.CreateScale(scaleX, scaleY, 1f);
-            var positionMatrix = Matrix4.CreateTranslation(new Vector3(ndcX, ndcY, 0));
+            var rotation = Matrix4x4.CreateRotationZ(angleRadians);
+            var scaleMatrix = Matrix4x4.CreateScale(scaleX, scaleY, 1f);
+            var positionMatrix = Matrix4x4.CreateTranslation(new Vector3(ndcX, ndcY, 0));
 
             return rotation * scaleMatrix * positionMatrix;
         }

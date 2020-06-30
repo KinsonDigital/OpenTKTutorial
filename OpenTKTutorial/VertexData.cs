@@ -6,7 +6,7 @@ namespace OpenTKTutorial
 {
     using System;
     using System.Runtime.InteropServices;
-    using OpenToolkit.Mathematics;
+    using System.Numerics;
 
     [StructLayout(LayoutKind.Sequential)]
     public struct VertexData : IEquatable<VertexData>

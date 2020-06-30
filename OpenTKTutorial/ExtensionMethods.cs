@@ -6,10 +6,14 @@ namespace OpenTKTutorial
 {
     using System;
     using System.Drawing;
-    using OpenToolkit.Mathematics;
+    using System.Numerics;
 
     public static class ExtensionMethods
     {
+        private const float PI = 3.1415926535897931f;
+
+        public static float ToRadians(this float degrees) => degrees * PI / 180f;
+
         public static int CountKD<T>(this T[] items, Predicate<T> predicate)
         {
             var result = 0;
