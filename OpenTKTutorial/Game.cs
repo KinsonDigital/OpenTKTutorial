@@ -25,6 +25,7 @@ namespace OpenTKTutorial
         private readonly Dictionary<int, ITexture> texturePool = new Dictionary<int, ITexture>();
         private readonly List<AtlasEntity> linkEntities = new List<AtlasEntity>();
         private readonly int atlasID;
+        private readonly int linkTextureID;
         private readonly Dictionary<string, AtlasSubRect> atlasSubRects;
         private readonly int totalEntities = 10;
         private bool isShuttingDown;
@@ -52,29 +53,33 @@ namespace OpenTKTutorial
             this.texturePool.Add(backgroundTexture.ID, backgroundTexture);
             this.backgroundTextureID = backgroundTexture.ID;
 
-            var mainAtlasTexture = ContentLoader.CreateTexture("main-atlas.png");
-            this.texturePool.Add(mainAtlasTexture.ID, mainAtlasTexture);
-            this.atlasID = mainAtlasTexture.ID;
+            var linkTexture = ContentLoader.CreateTexture("link.png");
+            this.texturePool.Add(linkTexture.ID, linkTexture);
+            this.linkTextureID = linkTexture.ID;
+
+            //var mainAtlasTexture = ContentLoader.CreateTexture("main-atlas.png");
+            //this.texturePool.Add(mainAtlasTexture.ID, mainAtlasTexture);
+            //this.atlasID = mainAtlasTexture.ID;
 
             // Load the atlas sub rectangle data
             this.atlasSubRects = ContentLoader.LoadAtlasData("atlas-data.json");
 
-            var random = new Random();
+            //var random = new Random();
 
-            for (var i = 0; i < this.totalEntities; i++)
-            {
-                var newEntity = new AtlasEntity(mainAtlasTexture.ID, this.atlasSubRects["link"])
-                {
-                    Position = new Vector2(random.Next(50, 970), random.Next(120, 680)),
-                    TintColor = Color.FromArgb(
-                        255,
-                        random.Next(0, 255),
-                        random.Next(0, 255),
-                        random.Next(0, 255)),
-                };
+            //for (var i = 0; i < this.totalEntities; i++)
+            //{
+            //    var newEntity = new AtlasEntity(mainAtlasTexture.ID, this.atlasSubRects["link"])
+            //    {
+            //        Position = new Vector2(random.Next(50, 970), random.Next(120, 680)),
+            //        TintColor = Color.FromArgb(
+            //            255,
+            //            random.Next(0, 255),
+            //            random.Next(0, 255),
+            //            random.Next(0, 255)),
+            //    };
 
-                this.linkEntities.Add(newEntity);
-            }
+            //    this.linkEntities.Add(newEntity);
+            //}
         }
 
         public Vector2 ScreenCenter => new Vector2(this.Size.X / 2f, this.Size.Y / 2);
@@ -88,35 +93,35 @@ namespace OpenTKTutorial
             if (this.isShuttingDown)
                 return;
 
-            if (KeyboardState.IsKeyDown(Key.Escape))
-                Close();
+            //if (KeyboardState.IsKeyDown(Key.Escape))
+            //    Close();
 
-            var totalTime = 4000;
+            //var totalTime = 4000;
 
-            // Use easing functions to gradually change texture values
-            var alphaResult = (int)EasingFunctions.EaseOutBounce(this.elapsedTime * 1000, 0, 255, totalTime);
+            //// Use easing functions to gradually change texture values
+            //var alphaResult = (int)EasingFunctions.EaseOutBounce(this.elapsedTime * 1000, 0, 255, totalTime);
 
-            alphaResult = alphaResult > 255 ? 255 : alphaResult;
+            //alphaResult = alphaResult > 255 ? 255 : alphaResult;
 
-            for (var i = 0; i < this.linkEntities.Count; i++)
-            {
-                this.linkEntities[i].Position = new Vector2((float)EasingFunctions.EaseOutBounce(this.elapsedTime * 1000, 100, 800, totalTime), this.linkEntities[i].Position.Y);
+            //for (var i = 0; i < this.linkEntities.Count; i++)
+            //{
+            //    this.linkEntities[i].Position = new Vector2((float)EasingFunctions.EaseOutBounce(this.elapsedTime * 1000, 100, 800, totalTime), this.linkEntities[i].Position.Y);
 
-                this.linkEntities[i].TintColor = NETColor.FromArgb(
-                    alphaResult,
-                    this.linkEntities[i].TintColor.R,
-                    this.linkEntities[i].TintColor.G,
-                    this.linkEntities[i].TintColor.B);
+            //    this.linkEntities[i].TintColor = NETColor.FromArgb(
+            //        alphaResult,
+            //        this.linkEntities[i].TintColor.R,
+            //        this.linkEntities[i].TintColor.G,
+            //        this.linkEntities[i].TintColor.B);
 
-                this.linkEntities[i].Angle = (float)EasingFunctions.EaseOutBounce(this.elapsedTime * 1000, 0, 360, totalTime);
-                this.linkEntities[i].Size = (float)EasingFunctions.EaseOutBounce(this.elapsedTime * 1000, 0.2f, 0.7f, totalTime);
-            }
+            //    this.linkEntities[i].Angle = (float)EasingFunctions.EaseOutBounce(this.elapsedTime * 1000, 0, 360, totalTime);
+            //    this.linkEntities[i].Size = (float)EasingFunctions.EaseOutBounce(this.elapsedTime * 1000, 0.2f, 0.7f, totalTime);
+            //}
 
-            // If the total time for the easing functions
-            // to finish has expired, reset everything.
-            this.elapsedTime = this.elapsedTime * 1000 > totalTime
-                ? 0
-                : this.elapsedTime += args.Time;
+            //// If the total time for the easing functions
+            //// to finish has expired, reset everything.
+            //this.elapsedTime = this.elapsedTime * 1000 > totalTime
+            //    ? 0
+            //    : this.elapsedTime += args.Time;
 
             base.OnUpdateFrame(args);
         }
@@ -174,20 +179,41 @@ namespace OpenTKTutorial
 
             this.spriteBatch.Render(backgroundTexture, backgroundSrcRect, backgroundDestRect, 1, 0, NETColor.White);
 
-            var atlasTexture = this.texturePool[this.atlasID];
+            var linkTexture = this.texturePool[this.linkTextureID];
 
-            for (var i = 0; i < this.linkEntities.Count; i++)
+            var linkSrcRect = new Rectangle()
             {
-                var destRect = new Rectangle((int)this.linkEntities[i].Position.X, (int)this.linkEntities[i].Position.Y, atlasTexture.Width, atlasTexture.Height);
+                X = 0,
+                Y = 0,
+                Width = this.texturePool[this.linkTextureID].Width,
+                Height = this.texturePool[this.linkTextureID].Height,
+            };
 
-                this.spriteBatch.Render(
-                    atlasTexture,
-                    this.linkEntities[i].AtlasSubRect.ToRectangle(),
-                    destRect,
-                    this.linkEntities[i].Size,
-                    this.linkEntities[i].Angle,
-                    this.linkEntities[i].TintColor);
-            }
+            var linkDestRect = new Rectangle()
+            {
+                X = 400,
+                Y = 400,
+                Width = this.texturePool[this.linkTextureID].Width,
+                Height = this.texturePool[this.linkTextureID].Height,
+            };
+
+            this.spriteBatch.Render(linkTexture, linkSrcRect, linkDestRect, 1, 0, NETColor.White);
+
+            //var atlasTexture = this.texturePool[this.atlasID];
+
+            //for (var i = 0; i < this.linkEntities.Count; i++)
+            //{
+            //    var destRect = new Rectangle((int)this.linkEntities[i].Position.X, (int)this.linkEntities[i].Position.Y, atlasTexture.Width, atlasTexture.Height);
+
+            //    this.spriteBatch.Render(
+            //        atlasTexture,
+            //        this.linkEntities[i].AtlasSubRect.ToRectangle(),
+            //        destRect,
+            //        this.linkEntities[i].Size,
+            //        this.linkEntities[i].Angle,
+            //        this.linkEntities[i].TintColor);
+            //    break;
+            //}
 
             this.spriteBatch.End();
         }
